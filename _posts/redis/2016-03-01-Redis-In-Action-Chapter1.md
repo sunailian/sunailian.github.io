@@ -12,9 +12,9 @@ comments: true
 
 本文讲述内容的完整代码实例见 <https://github.com/sunailian/TouchHigh>。
 
-##一、初识Redis
+#一、初识Redis
 
-###1、附件特性
+##1、附件特性
 
   Redis拥有两种不同形式的持久化方法。他们都可以用小而紧凑的格式将存储在内存中的数据写入硬盘：
 
@@ -22,7 +22,7 @@ comments: true
 
   - 将所有修改了数据库的命令都写入一个只追加(append-only)文件里面，用户可以根据数据的重要程度，将只追加写入设置为从不同步(sync)、每秒同步一次或者没写一个命令就同步一次。
 
-###2、Redis的数据结构
+##2、Redis的数据结构
 
    *结构类型* | *结构存储的值* | *结构的读写能力*  
   ------------|----------------|----------------
@@ -40,7 +40,7 @@ comments: true
 
 - 新开cmd窗口，输入redis-cli.exe -h 127.0.0.1 -p 6379 连接redis
 
-####2.1 Redis的字符串（STRING）
+###2.1 Redis的字符串（STRING）
 
 **一、STRING字符串命令**
 
@@ -68,7 +68,7 @@ DECR key | 将 key 中储存的数字值减一。
 DECRBY key decrement | key 所储存的值减去给定的减量值（decrement） 。
 APPEND key value | 如果 key 已经存在并且是一个字符串， APPEND 命令将 value 追加到 key 原来的值的末尾。
 
-####2.2 Redis中的列表（LIST）
+###2.2 Redis中的列表（LIST）
 
 一个列表可以有序地存储多个字符串。
 
@@ -97,5 +97,5 @@ RPOP key |移除并获取列表最后一个元素
 RPOPLPUSH source destination |移除列表的最后一个元素，并将该元素添加到另一个列表并返回
 
 
-####2.3 Redis的集合（SET）
+###2.3 Redis的集合（SET）
 
