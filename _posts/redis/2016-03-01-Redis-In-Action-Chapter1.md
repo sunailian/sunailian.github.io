@@ -99,3 +99,41 @@ RPOPLPUSH source destination |移除列表的最后一个元素，并将该元�
 
 ###2.3 Redis的集合（SET）
 
+Redis的集合和列表都可以存储多个字符串，它们之间的不同在于：*列表可以存储多个相同的字符串，而集合则通过使用散列表来保证自己存储的每个字符串都是各不相同的（这些散列表只有键，但没有与键相关联的值）*
+
+*命令（key即集合名称）*|*行为*
+------|------
+SADD key member1 [member2] |向集合添加一个或多个成员
+CARD key |获取集合的成员数
+SDIFF key1 [key2] |返回给定所有集合的差集
+SDIFFSTORE destination key1 [key2] |返回给定所有集合的差集并存储在 destination 中
+SINTER key1 [key2] |返回给定所有集合的交集
+SINTERSTORE destination key1 [key2] |返回给定所有集合的交集并存储在 destination 中
+SISMEMBER key member |判断 member 元素是否是集合 key 的成员
+SMEMBERS key |返回集合中的所有成员
+SMOVE source destination member |将 member 元素从 source 集合移动到 destination 集合
+SPOP key |移除并返回集合中的一个随机元素
+SRANDMEMBER key [count] |返回集合中一个或多个随机数
+SREM key member1 [member2] |移除集合中一个或多个成员
+SUNION key1 [key2] |返回所有给定集合的并集
+SUNIONSTORE destination key1 [key2] |所有给定集合的并集存储在 destination 集合中
+SSCAN key cursor [MATCH pattern] [COUNT count] |迭代集合中的元素
+
+###2.4 Redis的散列（HASH）
+
+*命令（key即散列名称）*|*行为*
+------|------
+HDEL key field2 [field2] |删除一个或多个哈希表字段
+HEXISTS key field |查看哈希表 key 中，指定的字段是否存在。
+HGET key field |获取存储在哈希表中指定字段的值
+HGETALL key |获取在哈希表中指定 key 的所有字段和值
+HINCRBY key field increment |为哈希表 key 中的指定字段的整数值加上增量 increment 。
+HINCRBYFLOAT key field increment |为哈希表 key 中的指定字段的浮点数值加上增量 increment 。
+HKEYS key | 获取所有哈希表中的字段
+HLEN key |获取哈希表中字段的数量
+HMGET key field1 [field2] |获取所有给定字段的值
+HMSET key field1 value1 [field2 value2 ] |同时将多个 field-value (域-值)对设置到哈希表 key 中。
+HSET key field value | 将哈希表 key 中的字段 field 的值设为 value 。
+HSETNX key field value |只有在字段 field 不存在时，设置哈希表字段的值。
+HVALS key | 获取哈希表中所有值
+HSCAN key cursor [MATCH pattern] [COUNT count] |迭代哈希表中的键值对。
