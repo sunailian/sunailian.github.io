@@ -466,10 +466,13 @@ AAAAfKAACAAAAEqAAD AAAAfKAACAAAAEqAAD JONES
 
 ###43.CONVERT(c,dset,sset) 
 将源字符串 sset从一个语言字符集转换到另一个目的dset字符集 
+
+```sql
 SQL> select convert(strutz,we8hp,f7dec) "conversion" from dual; 
 conver 
 ------ 
 strutz 
+```
 
 ###44.HEXTORAW 
 将一个十六进制构成的字符串转换为二进制 
