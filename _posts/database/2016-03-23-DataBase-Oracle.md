@@ -12,22 +12,25 @@ comments: true
 
 ###1.	ASCII 
 返回与指定的字符对应的十进制数; 
+```sql
 SQL> select ascii(A) A,ascii(a) a,ascii(0) zero,ascii( ) space from dual; 
 A A ZERO SPACE 
---------- --------- --------- --------- 
+--- 
 65 97 48 32 
-
+```
 ###2. CHR 
 给出整数,返回对应的字符; 
+```sql
 SQL> select chr(54740) zhao,chr(65) chr65 from dual; 
 ZH C 
 -- - 
 赵 A 
+```
 ###3. CONCAT 
 连接两个字符串; 
 SQL> select concat(010-,88888888)||转23 高乾竞电话 from dual; 
 高乾竞电话 
----------------- 
+---------------------------
 010-88888888转23 
 ###4. INITCAP 
 返回字符串并将字符串的第一个字母变为大写; 
