@@ -13,7 +13,7 @@ comments: true
 ###1.	ASCII 
 返回与指定的字符对应的十进制数; 
 
-```sql
+```
 SQL> select ascii(A) A,ascii(a) a,ascii(0) zero,ascii( ) space from dual; 
 A A ZERO SPACE 
 --- 
