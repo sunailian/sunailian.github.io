@@ -85,10 +85,13 @@ aabbccdd
 
 ###8.UPPER 
 返回字符串,并将所有的字符大写 
+
+```sql
 SQL> select upper(AaBbCcDd) upper from dual; 
 UPPER 
 ---------------------------------------------------
 AABBCCDD 
+```
 
 ###9.RPAD和LPAD(粘贴字符) 
 RPAD 在列的右边粘贴字符 
