@@ -12,6 +12,7 @@ comments: true
 
 ###1.	ASCII 
 返回与指定的字符对应的十进制数; 
+
 ```sql
 SQL> select ascii(A) A,ascii(a) a,ascii(0) zero,ascii( ) space from dual; 
 A A ZERO SPACE 
@@ -20,6 +21,7 @@ A A ZERO SPACE
 ```
 ###2. CHR 
 给出整数,返回对应的字符; 
+
 ```sql
 SQL> select chr(54740) zhao,chr(65) chr65 from dual; 
 ZH C 
