@@ -301,9 +301,9 @@ ROUND(55.5) ROUND(-55.4) TRUNC(55.5) TRUNC(-55.5)
 ```
 
 ###29.SIGN 
+取数字n的符号,大于0返回1,小于0返回-1,等于0返回0 
 
 ```sql
-取数字n的符号,大于0返回1,小于0返回-1,等于0返回0 
 SQL> select sign(123),sign(-100),sign(0) from dual; 
 SIGN(123) SIGN(-100) SIGN(0) 
 --------- ---------- --------- 
@@ -425,6 +425,9 @@ BJ_TIME LOS_ANGLES
 
 ###40.NEXT_DAY(date,day) 
 给出日期date和星期x之后计算下一个星期的日期 
+
+星期日 = 1  星期一 = 2  星期二 = 3 
+星期三 = 4  星期四 = 5  星期五 = 6  星期六 = 7
 
 ```sql
 SQL> select next_day('18-5月-2001','星期五') next_day from dual; 
@@ -568,6 +571,7 @@ ORACLE.WORLD Typ=1 Len=12 CharacterSet=ZHS16GBK: W,O,R,L,D
 
 ###55.GREATEST 
 返回一组表达式中的最大值,即比较字符的编码大小. 
+注意NULL要进行转0处理
 
 ```sql
 SQL> select greatest(AA,AB,AC) from dual; 
@@ -580,8 +584,11 @@ GR
 天 
 ```
 
+具体用法可参看<http://yedward.net/?id=142>，可以实现不同列之间的比较，或者同一列的所有数值比较
+
 ###56.LEAST 
 返回一组表达式中的最小值 
+注意NULL要进行转0处理
 
 ```sql
 SQL> select least(啊,安,天) from dual; 
@@ -589,6 +596,8 @@ LE
 -- 
 啊 
 ```
+
+具体用法可参看<http://yedward.net/?id=142>，可以实现不同列之间的比较，或者同一列的所有数值比较
 
 ###57.UID 
 返回标识当前用户的唯一整数
@@ -727,11 +736,32 @@ STDDEV(DISTINCTSAL)
 ###64.VARIANCE(DISTINCT|ALL) 
 求协方差 
 
+功能描述：该函数返回表达式的变量，Oracle计算该变量如下： 
+如果表达式中行数为1，则返回0 
+如果表达式中行数大于1，则返回VAR_SAMP 
+
 ```sql
 SQL> select variance(sal) from scott.emp; 
 VARIANCE(SAL) 
 ------------- 
 1398313.9 
+```
+
+SAMPLE：下例返回部门30按雇佣日期排序的薪水值的累积变化 
+
+```sql
+SELECT last_name, salary, VARIANCE(salary) 
+OVER (ORDER BY hire_date) "Variance" 
+FROM employees 
+WHERE department_id = 30; 
+LAST_NAME SALARY Variance 
+------------------------- ---------- ---------- 
+Raphaely 11000 0 
+Khoo 3100 31205000 
+Tobias 2800 21623333.3 
+Baida 2900 16283333.3 
+Himuro 2600 13317000 
+Colmenares 2500 11307000
 ```
 
 ###65.GROUP BY 
@@ -805,17 +835,17 @@ else 'a' end
 
 ###69.NVL(expr1, expr2) 
 
-```sql
+
 - NVL(expr1, expr2)->expr1为NULL，返回expr2；不为NULL，返回expr1。注意两者的类型要一致 
 - NVL2 (expr1, expr2, expr3) ->expr1不为NULL，返回expr2；为NULL，返回expr3。expr2和expr3类型不同的话，expr3会转换为expr2的类型 
 - NULLIF (expr1, expr2) ->相等返回NULL，不等返回expr1 
-```
+
 
 ###70.AVG 
-功能描述：用于计算一个组和数据窗口内表达式的平均值。
-
-```sql 
+功能描述：用于计算一个组和数据窗口内表达式的平均值。 
 SAMPLE：下面的例子中列c_mavg计算员工表中每个员工的平均薪水报告，该平均值由当前员工和与之具有相同经理的前一个和后一个三者的平均数得来； 
+
+```sql
 SELECT manager_id, last_name, hire_date, salary, 
 AVG(salary) OVER (PARTITION BY manager_id ORDER BY hire_date 
 ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS c_mavg 
@@ -834,10 +864,12 @@ MANAGER_ID LAST_NAME HIRE_DATE SALARY C_MAVG
 ###71.CORR 
 功能描述：返回一对表达式的相关系数，它是如下的缩写： 
 
-**COVAR_POP(expr1,expr2)/STDDEV_POP(expr1)*STDDEV_POP(expr2)) **
+ COVAR_POP(expr1,expr2)/STDDEV_POP(expr1)*STDDEV_POP(expr2)) 
+
 从统计上讲，相关性是变量之间关联的强度，变量之间的关联意味着在某种程度 
 上一个变量的值可由其它的值进行预测。通过返回一个-1~1之间的一个数, 相关 
 系数给出了关联的强度，0表示不相关。 
+
 SAMPLE：下例返回1998年月销售收入和月单位销售的关系的累积系数（本例在SH用户下运行） 
 
 ```sql
@@ -961,6 +993,7 @@ PU_MAN Raphaely 11000 1
 
 ###76.DENSE_RANK 
 功能描述：根据ORDER BY子句中表达式的值，从查询返回的每一行，计算它们与其它行的相对位置。组内的数据按ORDER BY子句排序，然后给每一行赋一个号，从而形成一个序列，该序列从1开始，往后累加。每次ORDER BY表达式的值发生变化时，该序列也随之增加。有同样值的行得到同样的数字序号（认为null时相等的）。密集的序列返回的时没有间隔的数 
+
 SAMPLE：下例中计算每个员工按部门分区再按薪水排序，依次出现的序列号（注意与RANK函数的区别）
 
 ```sql 
@@ -983,6 +1016,7 @@ DEPARTMENT_ID LAST_NAME SALARY DRANK
 
 ###77.FIRST 
 功能描述：从DENSE_RANK返回的集合中取出排在最前面的一个值的行（可能多行，因为值可能相等），因此完整的语法需要在开始处加上一个集合函数以从中取出记录 
+
 SAMPLE：下面例子中DENSE_RANK按部门分区，再按佣金commission_pct排序，FIRST取出佣金最低的对应的所有行，然后前面的MAX函数从这个集合中取出薪水最低的值；LAST取出佣金最高的对应的所有行，然后前面的MIN函数从这个集合中取出薪水最高的值 
 
 ```sql
@@ -1014,6 +1048,7 @@ Bates 80 7300 6100 14000
 
 ###78.FIRST_VALUE 
 功能描述：返回组中数据窗口的第一个值。 
+
 SAMPLE：下面例子计算按部门分区按薪水排序的数据窗口的第一个值对应的名字，如果薪水的第一个值有多个，则从多个对应的名字中取缺省排序的第一个名字 
 
 ```sql
@@ -1034,7 +1069,8 @@ DEPARTMENT_ID LAST_NAME SALARY LOWEST_SAL
 ```
 
 ###79.LAG 
-功能描述：可以访问结果集中的其它行而不用进行自连接。它允许去处理游标，就好像游标是一个数组一样。在给定组中可参考当前行之前的行，这样就可以从组中与当前行一起选择以前的行。Offset是一个正整数，其默认值为1，若索引超出窗口的范围，就返回默认值（默认返回的是组中第一行），其相反的函数是LEAD 
+功能描述：可以访问结果集中的其它行而不用进行自连接。它允许去处理游标，就好像游标是一个数组一样。在给定组中可参考当前行之前的行，这样就可以从组中与当前行一起选择以前的行。Offset是一个正整数，其默认值为1，若索引超出窗口的范围，就返回默认值（默认返回的是组中第一行），其相反的函数是**LEAD **
+
 SAMPLE：下面的例子中列prev_sal返回按hire_date排序的前1行的salary值 
 
 ```sql
@@ -1053,6 +1089,7 @@ Colmenares 10-8月 -99 2500 2600
 
 ###80.LAST 
 功能描述：从DENSE_RANK返回的集合中取出排在最后面的一个值的行（可能多行，因为值可能相等），因此完整的语法需要在开始处加上一个集合函数以从中取出记录 
+
 SAMPLE：下面例子中DENSE_RANK按部门分区，再按佣金commission_pct排序，FIRST取出佣金最低的对应的所有行，然后前面的MAX函数从这个集合中取出薪水最低的值；LAST取出佣金最高的对应的所有行，然后前面的MIN函数从这个集合中取出薪水最高的值 
 
 ```sql
@@ -1082,6 +1119,7 @@ Bates 80 7300 6100 14000
 
 ###81.LAST_VALUE 
 功能描述：返回组中数据窗口的最后一个值。 
+
 SAMPLE：下面例子计算按部门分区按薪水排序的数据窗口的最后一个值对应的名字，如果薪水的最后一个值有多个，则从多个对应的名字中取缺省排序的最后一个名字 
 
 ```sql
@@ -1103,6 +1141,7 @@ DEPARTMENT_ID LAST_NAME SALARY HIGHEST_SAL
 
 ###82.LEAD 
 功能描述：LEAD与LAG相反，LEAD可以访问组中当前行之后的行。Offset是一个正整数，其默认值为1，若索引超出窗口的范围，就返回默认值（默认返回的是组中第一行） 
+
 SAMPLE：下面的例子中每行的"NextHired"返回按hire_date排序的下一行的hire_date值 
 
 ```sql
@@ -1121,6 +1160,7 @@ Colmenares 10-AUG-99
 
 ###83.MAX 
 功能描述：在一个组中的数据窗口中查找表达式的最大值。 
+
 SAMPLE：下面例子中dept_max返回当前行所在部门的最大薪水值 
 
 ```sql
@@ -1142,6 +1182,7 @@ DEPARTMENT_ID LAST_NAME SALARY DEPT_MAX
 
 ###84.MIN 
 功能描述：在一个组中的数据窗口中查找表达式的最小值。 
+
 SAMPLE：下面例子中dept_min返回当前行所在部门的最小薪水值 
 
 ```sql
@@ -1163,6 +1204,7 @@ DEPARTMENT_ID LAST_NAME SALARY DEPT_MIN
 
 ###85.NTILE 
 功能描述：将一个组分为"表达式"的散列表示，例如，如果表达式=4，则给组中的每一行分配一个数（从1到4），如果组中有20行，则给前5行分配1，给下5行分配2等等。如果组的基数不能由表达式值平均分开，则对这些行进行分配时，组中就没有任何percentile的行数比其它percentile的行数超过一行，最低的percentile是那些拥有额外行的percentile。例如，若表达式=4，行数=21，则percentile=1的有5行，percentile=2的有5行等等。 
+
 SAMPLE：下例中把6行数据分为4份 
 
 ```sql
@@ -1291,6 +1333,8 @@ DEPARTMENT_ID LAST_NAME SALARY DRANK
 90 De Haan 17000 1 
 90 King 24000 3
 ```
+
+与DENSE_RANK区别具体参看：<http://www.linuxidc.com/Linux/2015-04/116349.htm>
 
 ###90.RATIO_TO_REPORT 
 功能描述：该函数计算expression/(sum(expression))的值，它给出相对于总数的百分比，即当前行对sum(expression)的贡献。 
@@ -1473,6 +1517,7 @@ DAY_NUMBER_IN_MONTH Regr_sxy Regr_syy Regr_sxx
 
 ###92.ROW_NUMBER 
 功能描述：返回有序组中一行的偏移量，从而可用于按特定标准排序的行号。 
+
 SAMPLE：下例返回每个员工再在每个部门中按员工号排序后的顺序号 
 
 ```sql
@@ -1655,220 +1700,5 @@ CALENDAR Var_Pop Var_Samp
 1998-12 4.8937E+12 5.3386E+12 
 ```
 
-###99.VARIANCE 
-功能描述：该函数返回表达式的变量，Oracle计算该变量如下： 
-如果表达式中行数为1，则返回0 
-如果表达式中行数大于1，则返回VAR_SAMP 
-SAMPLE：下例返回部门30按雇佣日期排序的薪水值的累积变化 
-
-```sql
-SELECT last_name, salary, VARIANCE(salary) 
-OVER (ORDER BY hire_date) "Variance" 
-FROM employees 
-WHERE department_id = 30; 
-LAST_NAME SALARY Variance 
-------------------------- ---------- ---------- 
-Raphaely 11000 0 
-Khoo 3100 31205000 
-Tobias 2800 21623333.3 
-Baida 2900 16283333.3 
-Himuro 2600 13317000 
-Colmenares 2500 11307000
-```
-
-###100.RANK 
-功能描述：根据ORDER BY子句中表达式的值，从查询返回的每一行，计算它们与其它行的相对位置。组内的数据按ORDER BY子句排序， 
-然后给每一行赋一个号，从而形成一个序列，该序列从1开始，往后累加。每次ORDER BY表达式的值发生变化时，该序列也随之增加。 
-有同样值的行得到同样的数字序号（认为null时相等的）。然而，如果两行的确得到同样的排序，则序数将随后跳跃。若两行序数为1， 
-则没有序数2，序列将给组中的下一行分配值3，DENSE_RANK则没有任何跳跃。 
-SAMPLE：下例中计算每个员工按部门分区再按薪水排序，依次出现的序列号（注意与DENSE_RANK函数的区别） 
-
-```sql
-SELECT d.department_id , e.last_name, e.salary, RANK() 
-OVER (PARTITION BY e.department_id ORDER BY e.salary) as drank 
-FROM employees e, departments d 
-WHERE e.department_id = d.department_id 
-AND d.department_id IN ('60', '90'); 
-DEPARTMENT_ID LAST_NAME SALARY DRANK 
-------------- ------------------------- ---------- ---------- 
-60 Lorentz 4200 1 
-60 Austin 4800 2 
-60 Pataballa 4800 2 
-60 Ernst 6000 4 
-60 Hunold 9000 5 
-90 Kochhar 17000 1 
-90 De Haan 17000 1 
-90 King 24000 3
-```
-
-###101.RATIO_TO_REPORT 
-功能描述：该函数计算expression/(sum(expression))的值，它给出相对于总数的百分比，即当前行对sum(expression)的贡献。 
-SAMPLE：下例计算每个员工的工资占该类员工总工资的百分比 
-
-```sql
-SELECT last_name, salary, RATIO_TO_REPORT(salary) OVER () AS rr 
-FROM employees 
-WHERE job_id = 'PU_CLERK'; 
-LAST_NAME SALARY RR 
-------------------------- ---------- ---------- 
-Khoo 3100 .223021583 
-Baida 2900 .208633094 
-Tobias 2800 .201438849 
-Himuro 2600 .18705036 
-Colmenares 2500 .179856115 
-```
 
 
-###102.STDDEV 
-功能描述：计算当前行关于组的标准偏离。（Standard Deviation） 
-SAMPLE：下例返回部门30按雇佣日期排序的薪水值的累积标准偏离 
-
-```sql
-SELECT last_name, hire_date,salary, 
-STDDEV(salary) OVER (ORDER BY hire_date) "StdDev" 
-FROM employees 
-WHERE department_id = 30; 
-LAST_NAME HIRE_DATE SALARY StdDev 
-------------------------- ---------- ---------- ---------- 
-Raphaely 07-12月-94 11000 0 
-Khoo 18-5月 -95 3100 5586.14357 
-Tobias 24-7月 -97 2800 4650.0896 
-Baida 24-12月-97 2900 4035.26125 
-Himuro 15-11月-98 2600 3649.2465 
-Colmenares 10-8月 -99 2500 3362.58829
-```
-
-###103.STDDEV_POP 
-功能描述：该函数计算总体标准偏离，并返回总体变量的平方根，其返回值与VAR_POP函数的平方根相同。（Standard Deviation－Population） 
-SAMPLE：下例返回部门20、30、60的薪水值的总体标准偏差 
-
-```sql
-SELECT department_id, last_name, salary, 
-STDDEV_POP(salary) OVER (PARTITION BY department_id) AS pop_std 
-FROM employees 
-WHERE department_id in (20,30,60); 
-DEPARTMENT_ID LAST_NAME SALARY POP_STD 
-------------- ------------------------- ---------- ---------- 
-20 Hartstein 13000 3500 
-20 Fay 6000 3500 
-30 Raphaely 11000 3069.6091 
-30 Khoo 3100 3069.6091 
-30 Baida 2900 3069.6091 
-30 Colmenares 2500 3069.6091 
-30 Himuro 2600 3069.6091 
-30 Tobias 2800 3069.6091 
-60 Hunold 9000 1722.32401 
-60 Ernst 6000 1722.32401 
-60 Austin 4800 1722.32401 
-60 Pataballa 4800 1722.32401 
-60 Lorentz 4200 1722.32401 
-```
-
-###104.STDDEV_SAMP 
-功能描述： 该函数计算累积样本标准偏离，并返回总体变量的平方根，其返回值与VAR_POP函数的平方根相同。（Standard Deviation－Sample） 
-SAMPLE：下例返回部门20、30、60的薪水值的样本标准偏差 
-
-```sql
-SELECT department_id, last_name, hire_date, salary, 
-STDDEV_SAMP(salary) OVER 
-(PARTITION BY department_id ORDER BY hire_date 
-ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cum_sdev 
-FROM employees 
-WHERE department_id in (20,30,60); 
-DEPARTMENT_ID LAST_NAME HIRE_DATE SALARY CUM_SDEV 
-------------- ------------------------- ---------- ---------- ---------- 
-20 Hartstein 17-2月 -96 13000 
-20 Fay 17-8月 -97 6000 4949.74747 
-30 Raphaely 07-12月-94 11000 
-30 Khoo 18-5月 -95 3100 5586.14357 
-30 Tobias 24-7月 -97 2800 4650.0896 
-30 Baida 24-12月-97 2900 4035.26125 
-30 Himuro 15-11月-98 2600 3649.2465 
-30 Colmenares 10-8月 -99 2500 3362.58829 
-60 Hunold 03-1月 -90 9000 
-60 Ernst 21-5月 -91 6000 2121.32034 
-60 Austin 25-6月 -97 4800 2163.33077 
-60 Pataballa 05-2月 -98 4800 1982.42276 
-60 Lorentz 07-2月 -99 4200 1925.61678 
-```
-
-###105.VAR_POP 
-功能描述：（Variance Population）该函数返回非空集合的总体变量（忽略null），VAR_POP进行如下计算： 
-(SUM(expr2) - SUM(expr)2 / COUNT(expr)) / COUNT(expr) 
-SAMPLE：下例计算1998年每月销售的累积总体和样本变量（本例在SH用户下运行） 
-
-```sql
-SELECT t.calendar_month_desc, 
-VAR_POP(SUM(s.amount_sold)) 
-OVER (ORDER BY t.calendar_month_desc) "Var_Pop", 
-VAR_SAMP(SUM(s.amount_sold)) 
-OVER (ORDER BY t.calendar_month_desc) "Var_Samp" 
-FROM sales s, times t 
-WHERE s.time_id = t.time_id AND t.calendar_year = 1998 
-GROUP BY t.calendar_month_desc; 
-CALENDAR Var_Pop Var_Samp 
--------- ---------- ---------- 
-1998-01 0 
-1998-02 6.1321E+11 1.2264E+12 
-1998-03 4.7058E+11 7.0587E+11 
-1998-04 4.6929E+11 6.2572E+11 
-1998-05 1.5524E+12 1.9405E+12 
-1998-06 2.3711E+12 2.8453E+12 
-1998-07 3.7464E+12 4.3708E+12 
-1998-08 3.7852E+12 4.3260E+12 
-1998-09 3.5753E+12 4.0222E+12 
-1998-10 3.4343E+12 3.8159E+12 
-1998-11 3.4245E+12 3.7669E+12 
-1998-12 4.8937E+12 5.3386E+12 
-```
-
-###106.VAR_SAMP 
-功能描述：（Variance Sample）该函数返回非空集合的样本变量（忽略null），VAR_POP进行如下计算： 
-(SUM(expr*expr)-SUM(expr)*SUM(expr)/COUNT(expr))/(COUNT(expr)-1) 
-SAMPLE：下例计算1998年每月销售的累积总体和样本变量 
-
-```sql
-SELECT t.calendar_month_desc, 
-VAR_POP(SUM(s.amount_sold)) 
-OVER (ORDER BY t.calendar_month_desc) "Var_Pop", 
-VAR_SAMP(SUM(s.amount_sold)) 
-OVER (ORDER BY t.calendar_month_desc) "Var_Samp" 
-FROM sales s, times t 
-WHERE s.time_id = t.time_id AND t.calendar_year = 1998 
-GROUP BY t.calendar_month_desc; 
-CALENDAR Var_Pop Var_Samp 
--------- ---------- ---------- 
-1998-01 0 
-1998-02 6.1321E+11 1.2264E+12 
-1998-03 4.7058E+11 7.0587E+11 
-1998-04 4.6929E+11 6.2572E+11 
-1998-05 1.5524E+12 1.9405E+12 
-1998-06 2.3711E+12 2.8453E+12 
-1998-07 3.7464E+12 4.3708E+12 
-1998-08 3.7852E+12 4.3260E+12 
-1998-09 3.5753E+12 4.0222E+12 
-1998-10 3.4343E+12 3.8159E+12 
-1998-11 3.4245E+12 3.7669E+12 
-1998-12 4.8937E+12 5.3386E+12 
-```
-
-###107.VARIANCE 
-功能描述：该函数返回表达式的变量，Oracle计算该变量如下： 
-如果表达式中行数为1，则返回0 
-如果表达式中行数大于1，则返回VAR_SAMP 
-SAMPLE：下例返回部门30按雇佣日期排序的薪水值的累积变化 
-
-```sql
-SELECT last_name, salary, VARIANCE(salary) 
-OVER (ORDER BY hire_date) "Variance" 
-FROM employees 
-WHERE department_id = 30; 
-LAST_NAME SALARY Variance 
-------------------------- ---------- ---------- 
-Raphaely 11000 0 
-Khoo 3100 31205000 
-Tobias 2800 21623333.3 
-Baida 2900 16283333.3 
-Himuro 2600 13317000 
-Colmenares 2500 11307000
-```
