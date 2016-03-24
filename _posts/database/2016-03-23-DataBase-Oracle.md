@@ -1,8 +1,8 @@
 ---
 layout: post
-title: Oracle使用摘记
+title: Oracle常用函数大全
 categories: [database, oracle]
-description: Oracle使用摘记
+description: Oracle常用函数大全
 keywords: database, oracle
 autotoc: true
 comments: true
