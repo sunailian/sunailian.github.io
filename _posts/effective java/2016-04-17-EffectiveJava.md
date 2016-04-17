@@ -1,0 +1,225 @@
+---
+layout: post
+title: 《Effective Java》学习笔记
+categories: [Effective Java, Java]
+description: 《Effective Java》学习笔记
+keywords: Effective Java, Java
+autotoc: true
+comments: true
+---
+
+##第二章 创建和销毁对象
+
+标签（空格分隔）： Effective Java
+
+---
+
+**第1条：用静态工厂方法代替构造器**
+
+ * 类提供一个共有的静态工厂方法，返回类的实例
+ * 注意：与工厂模式不同，并不直接对应。
+ * 静态工厂方法比起构造器的优势：
+ 1. 它们有名称：
+    a)：如果构造器的参数不能正确描述正被返回的对象，具有适当名称的静态方法更容易使用。
+    b)：当一个类需要多个带有相同签名的构造器时，就可以用静态工厂代替构造器
+例子：BigInterger.probablePrime()
+ 2. 不必每次调用它们的时候都创建新的对象：单例模式或者享元模式。
+    a)：静态工厂方法能为重复的调用返回相同的类，有助于类控制在哪个时间段存在哪些实例。被称为实例受控的类。
+ 3. 他们可以返回原返回类型的任何子类型的对象。
+    a)：API可以返回对象，又不会使对象的类变成共有的，适合基于接口的框架。
+    b)：被返回的对象由相关的借口精确指定。
+    c)：共有的静态工厂方法所返回的类不仅可以是非公有的，还可以随着每次调用发生变化，这取决于工厂方法参数值。
+    d)：静态工厂方法返回的对象所属的类，在编写该静态方法时可以不必存在（留给开发者实现）
+ 4. 在创建参数化实例的时候，它们使代码更为简单：
+
+```java
+Map<String, List<String>> m = new Map<String, List<String>>();
+Map<String, List<String>> m = HashMap.newInstance(); //减少一次参数
+```    
+
+ 
+ * 静态工厂方法的缺点：
+ 1. 类如果不含公有或者受保护的构造器，就不能被子类化。
+ `可能鼓励程序员使用复合，而非继承`
+ 2. 它们与其他静态方法没有任何区别。 
+   a)：要想查明如何实例化一个类是非常困难的；
+   b)：静态工厂方法的惯用名称：
+        `ValueOf: 类型转换方法`
+        `getInstance: 返回唯一的实例`
+        `newInstance：保证每个返回的实例都与其他不同`
+        `getType/newType：返回工厂对象的类`
+
+**第2条：遇到多个构造器参数时要考虑构建器（建造者模式）**
+
+ 1. 重叠构造器模式：第一个构造器只有一个必要参数，第二个有一个可选参数，第三个有两个，以此类推，最后一个构造器有全部的可选参数。创建实例的时候，选择最短的列表参数的构造器
+`结论：当有许多参数的时候，客户端代码会很难编写`
+
+```java
+public class NutritionFacts {
+
+    private final int servingSize;
+    private final int servings;
+    private final int calories;
+    private final int fat;
+    private final int sodium;
+    private final int carbohydrate;
+
+    public NutritionFacts(int servingSize, int servings) {
+        this.servingSize = servingSize;
+        this.servings = servings;
+    }
+
+    public NutritionFacts(int servingSize, int servings, int calories) {
+        this.servingSize = servingSize;
+        this.servings = servings;
+        this.calories = calories;
+    }
+
+    public NutritionFacts(int servingSize, int servings, int calories, int fat) {
+        this.servingSize = servingSize;
+        this.servings = servings;
+        this.calories = calories;
+        this.fat = fat;
+    }
+
+    public NutritionFacts(int servingSize, int servings, int calories, int fat, int sodium) {
+        this.servingSize = servingSize;
+        this.servings = servings;
+        this.calories = calories;
+        this.fat = fat;
+        this.sodium = sodium;
+    }
+
+    public NutritionFacts(int servingSize, int servings, int calories, int fat, int sodium, int carbohydrate) {
+        this.servingSize = servingSize;
+        this.servings = servings;
+        this.calories = calories;
+        this.fat = fat;
+        this.sodium = sodium;
+        this.carbohydrate = carbohydrate;
+    }
+}
+```
+
+2. **Java Beans模式**：调用一个无参数构造器来创建对象，然后用setter方法设置每个必要的参数
+**评价**：有严重的缺点，构造过程被分配到几个过程中，JavaBean可能处于不一致的状态。需要程序员付出额外的努力来确保它的线程安全。
+
+```java
+public class NutritionFacts {
+
+    private   int servingSize;
+    private   int servings;
+    private   int calories;
+    private   int fat;
+    private   int sodium;
+    private   int carbohydrate;
+
+    public void setCarbohydrate(int carbohydrate) {
+        this.carbohydrate = carbohydrate;
+    }
+
+    public void setServingSize(int servingSize) {
+        this.servingSize = servingSize;
+    }
+
+    public void setServings(int servings) {
+        this.servings = servings;
+    }
+
+    public void setCalories(int calories) {
+        this.calories = calories;
+    }
+
+    public void setFat(int fat) {
+        this.fat = fat;
+    }
+
+    public void setSodium(int sodium) {
+        this.sodium = sodium;
+    }
+}
+```
+
+3. **建造者方法**：既能保证安全性，又能保证可读性。**最好一开始就使用Builder模式.**
+
+```java
+public class NutritionFacts3 {
+
+    private final int servingSize;
+    private final int servings;
+    private final int calories;
+    private final int fat;
+    private final int sodium;
+    private final int carbohydrate;
+
+    public static class Builder {
+        //required parameters
+        private final int servingSize;
+        private final int servings;
+
+        //optional parameters
+        private final int calories = 0;
+        private final int fat = 0;
+        private final int sodium = 0;
+        private final int carbohydrate = 0;
+
+        public Builder(int servingSize, int servings) {
+            this.servingSize = servingSize;
+            this.servings = servings;
+        }
+
+        public Builder calories(int val) {
+            calories = val;
+            return this;
+        }
+
+        public Builder fat(int val) {
+            fat = val;
+            return this;
+        }
+
+        public Builder carbohydrate(int val) {
+            carbohydrate = val;
+            return this;
+        }
+
+        public Builder sodium(int val) {
+            sodium = val;
+            return this;
+        }
+
+        public NutritionFacts3 build() {
+            return new NutritionFacts3(this);
+        }
+
+    }
+
+
+    private NutritionFacts3(Builder builder) {
+        servings = builder.servings;
+        servingSize = builder.servingSize;
+        calories = builder.calories;
+        fat = builder.fat;
+        sodium = builder.sodium;
+        carbohydrate = builder.carbohydrate;
+    }
+}
+
+
+```
+客户端调用：
+
+```java
+public class Client {
+
+    NutritionFacts3 cocaCola = new NutritionFacts3.Builder(240, 80).calories(10).
+            carbohydrate(20).fat(30).sodium(40).build();
+}
+
+
+```
+
+ 
+
+
+
