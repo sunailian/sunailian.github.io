@@ -45,13 +45,13 @@ Map<String, List<String>> m = HashMap.newInstance(); //减少一次参数
    a)：要想查明如何实例化一个类是非常困难的；<br/>
    b)：静态工厂方法的惯用名称：<br/>
         `ValueOf: 类型转换方法`<br/>
-        `getInstance: 返回唯一的实例`<br/><br/>
+        `getInstance: 返回唯一的实例`<br/>
         `newInstance：保证每个返回的实例都与其他不同`<br/>
         `getType/newType：返回工厂对象的类`<br/>
 
 **第2条：遇到多个构造器参数时要考虑构建器（建造者模式）**
 
- 1. 重叠构造器模式：第一个构造器只有一个必要参数，第二个有一个可选参数，第三个有两个，以此类推，最后一个构造器有全部的可选参数。创建实例的时候，选择最短的列表参数的构造器<br/>
+ [1]. 重叠构造器模式：第一个构造器只有一个必要参数，第二个有一个可选参数，第三个有两个，以此类推，最后一个构造器有全部的可选参数。创建实例的时候，选择最短的列表参数的构造器<br/>
 `结论：当有许多参数的时候，客户端代码会很难编写`<br/>
 
 ```java
@@ -101,7 +101,7 @@ public class NutritionFacts {
 }
 ```
 
-2. **Java Beans模式**：调用一个无参数构造器来创建对象，然后用setter方法设置每个必要的参数<br/>
+[2]. **Java Beans模式**：调用一个无参数构造器来创建对象，然后用setter方法设置每个必要的参数<br/>
 **评价**：有严重的缺点，构造过程被分配到几个过程中，JavaBean可能处于不一致的状态。需要程序员付出额外的努力来确保它的线程安全。
 
 ```java
@@ -140,7 +140,7 @@ public class NutritionFacts {
 }
 ```
 
-3. **建造者方法**：既能保证安全性，又能保证可读性。**最好一开始就使用Builder模式.**
+[3]. **建造者方法**：既能保证安全性，又能保证可读性。**最好一开始就使用Builder模式.**
 
 ```java
 public class NutritionFacts3 {
@@ -219,7 +219,24 @@ public class Client {
 
 ```
 
- 
+ 先调用类的builder方法创建一个builder，再用setter设置各个参数（注意使用return this;可以构造参数链），最后调用builder返回一个类。
+
+ a)	Builder可以进行域的检查，是否违反约束条件；<br/>
+ b)	Builder可以有多个可变参数；<br/>
+ c)	Builder方法可以自动填充域，也可以返回不同的对象；<br/>
+ d)	使用泛型的builder；<br/>
+
+ ```java
+
+ public interface Builder<T>{
+        public T builder();
+ }
+
+```
+e)	Java传统的抽象工厂实现是Class对象，用newInstance()来build。；<br/>
+**评价**：newInstance()会主动调用无参数的构造函数，而且没有编译时错误，只能在runtime抛出异常。这破坏了编译时的异常检查。；<br/>
+f)	Builder模式的不足之处：必须先构建Builder对象。可能有性能问题，必须在有很多参数时才适合使用。；<br/>
 
 
+**第3条：3.	用私有构造器或者枚举类型强化Singleton属性**
 
