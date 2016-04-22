@@ -57,28 +57,15 @@ subscribe_rss: /feed.xml
 # ---------------- #
 #      Jekyll      #
 # ---------------- #
-
-#markdown: redcarpet
-#redcarpet: 
-#    extensions: 
-#        - no_intra_emphasis
-#        - fenced_code_blocks
-#        - autolink
-#        - tables
-#        - with_toc_data
-#        - strikethrough
-
-markdown: kramdown
-kramdown:
-  input: GFM
-  extensions:
-    - autolink
-    - footnotes
-    - smart
-  use_coderay: true
-  syntax_highlighter: rouge
-  coderay:
-    coderay_line_numbers:  nil
+markdown: redcarpet
+redcarpet: 
+    extensions: 
+        - no_intra_emphasis
+        - fenced_code_blocks
+        - autolink
+        - tables
+        - with_toc_data
+        - strikethrough
 
 pygments: true
 paginate: 8
