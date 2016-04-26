@@ -238,5 +238,44 @@ e)	Java传统的抽象工厂实现是Class对象，用newInstance()来build。�
 f)	Builder模式的不足之处：必须先构建Builder对象。可能有性能问题，必须在有很多参数时才适合使用。；<br/>
 
 
-**第3条：3.	用私有构造器或者枚举类型强化Singleton属性**
+**第3条：用私有构造器或者枚举类型强化Singleton属性**
 
+```java
+
+public class Evils{ 
+    public static final Evils INSTANTCE=new Evils(); 
+    private Evils(){...} 
+ 
+    public void leaveTheBuilding(){...} 
+}
+
+```
+
+a)	注意客户端可以使用**反射机制**来调用私有的构造方法：应该在类被要求创造第二个实例的时候抛出异常 AccessibleObject.setAccessble()<br/>
+b)	公有属性的好处：组成类的成员的声明很清楚地表明了这个类是一个Singleton<br/>
+c)	工厂方法的好处：它提供了灵活性。在不改变API的前提下可以改变该类是否为Singleton的想法，或者修改成每一个调用的线程都返回一个唯一的实例。<br/>
+d)	序列化：仅仅加上implements Serializable是不够的，需要所有域都是瞬时的，而且提供一个**readResolve()**方法防止假冒对象。<br/>
+
+```java
+
+private readResolve(){ 
+    return INSTANCE; 
+} 
+
+```
+
+e)	编写单个元素的枚举类型：更加简洁，无偿提供序列化机制，而且绝对防止多次实例化，是目前最好的方法。
+
+```java
+
+publ enum Evlils{
+    INSTANCE;
+     
+}
+
+```
+
+**第4条：通过私有构造器强化不可被实例化的类的特性**
+
+a)	让工具类包含私有构造器，应该加上注释<br/>
+b)	副作用：使该类不能被子类化<br/>
