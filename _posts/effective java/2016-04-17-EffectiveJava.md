@@ -14,7 +14,7 @@ comments: true
 
 ---
 
-**第1条：用静态工厂方法代替构造器**
+###第1条：用静态工厂方法代替构造器
 
  * 类提供一个共有的静态工厂方法，返回类的实例
  * 注意：与工厂模式不同，并不直接对应。
@@ -49,7 +49,7 @@ Map<String, List<String>> m = HashMap.newInstance(); //减少一次参数
         `newInstance：保证每个返回的实例都与其他不同`<br/>
         `getType/newType：返回工厂对象的类`<br/>
 
-**第2条：遇到多个构造器参数时要考虑构建器（建造者模式）**
+###第2条：遇到多个构造器参数时要考虑构建器（建造者模式）
 
  [1]. 重叠构造器模式：第一个构造器只有一个必要参数，第二个有一个可选参数，第三个有两个，以此类推，最后一个构造器有全部的可选参数。创建实例的时候，选择最短的列表参数的构造器<br/>
 `结论：当有许多参数的时候，客户端代码会很难编写`<br/>
@@ -238,7 +238,7 @@ e)	Java传统的抽象工厂实现是Class对象，用newInstance()来build。�
 f)	Builder模式的不足之处：必须先构建Builder对象。可能有性能问题，必须在有很多参数时才适合使用。；<br/>
 
 
-**第3条：用私有构造器或者枚举类型强化Singleton属性**
+###第3条：用私有构造器或者枚举类型强化Singleton属性
 
 ```java
 
@@ -275,7 +275,120 @@ publ enum Evlils{
 
 ```
 
-**第4条：通过私有构造器强化不可被实例化的类的特性**
+###第4条：通过私有构造器强化不可被实例化的类的特性
 
 a)	让工具类包含私有构造器，应该加上注释<br/>
 b)	副作用：使该类不能被子类化<br/>
+
+```java
+
+public class UtilityClass {
+
+    private UtilityClass(){...}
+}
+
+```
+
+###第5条：避免创建不必要的对象
+
+- (1)：如果对象不可变，就始终可以重用
+
+```java
+
+String s = new String("aaa");//Don't do this!!
+
+String s = "aaa";
+
+```
+
+- (2)：对于同时提供了静态工厂和构造器的不可变类，通常使用**静态工厂而不是构造器，以避免创建不必要的对象**；
+eg：Boolean.valueOf(String)总是优先于Boolean(String)；
+
+- (3)：重用一直不会被改变的可变对象
+
+```java
+
+public class Person {
+
+    private final Date birthDate;
+
+    //Don't do this!!
+    public boolean is baby() {
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        cal.set(1946, Calendar.JANUARY, 1, 0, 0);
+        Date boomStart = cal.getTime();
+        cal.set(1965, Calendar.JANUARY, 1, 0, 0);
+        Date boomEnd = cal.getTime();
+        return birthDate.compareTo(boomStart) >= 0 && birthDate.compareTo(boomEnd) < 0;
+    }
+
+
+}
+
+```
+
+以上错误代码：**创建了不必要的Date对象。**
+
+```java
+
+public class Person {
+
+    private final Date birthDate;
+    private final Date BOOM_START;
+    private final Date BOOM_END;
+
+    static {
+        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+        cal.set(1946, Calendar.JANUARY, 1, 0, 0);
+        BOOM_START = cal.getTime();
+        cal.set(1965, Calendar.JANUARY, 1, 0, 0);
+        BOOM_END = cal.getTime();
+    }
+
+    //Don't do this!!
+    public boolean isbaby() {
+
+        return birthDate.compareTo(boomStart) >= 0 && birthDate.compareTo(boomEnd) < 0;
+    }
+
+}
+
+```
+
+使用Static语句块能避免这个问题。
+
+- (4)：适配器对象：将功能委托给后备对象，为后备对象提供接口。
+       例如Map接口的keySet()函数返回时不创建新的实例
+- (5)：自动装箱：优先使用基本类型而非装箱基本类型
+- (6)：通过创建对象来提升程序的清晰性，简洁性和功能性，通常是好事。
+- (7)：除非对象池里的对象非常重量级（数据库连接池），不然不要通过使用对象池来避免创建对象
+
+
+###第6条：消除过期对象的引用
+
+- (1)：过期引用
+
+      i.	栈内部维护着对过期对象的过期引用，永远也不会被解除。导致内存泄露；
+
+```java
+public Object pop() {
+        if (size == 0)
+            throw new EmptyStackException();
+        Object result = elements[--size];
+        elements[size] = null;//消除过期对象引用
+        return result;
+}
+
+```
+
+    ii.	清空过期对象的好处：错误引用时立即抛出异常<br/>
+    iii. 清空对象应该是一种例外而非规范。最好的方法是让包含此引用的变量结束其生命周期。<br/>
+    iv.	只要类自己管理内存，程序员就应该警惕内存泄露。<br/>
+
+- (2)：	缓存
+  i.	可以考虑使用WeakHashMap来代表缓存；<br/>
+ ii.	使用后台线程来定期清理；<br/>
+ iii.	对于更复杂的缓存，使用java.lang.ref<br/>
+
+- (3)：	监听器和回调：只保留弱引用
+
