@@ -51,7 +51,7 @@ Map<String, List<String>> m = HashMap.newInstance(); //减少一次参数
 
 ###第2条：遇到多个构造器参数时要考虑构建器（建造者模式）
 
- [1]. 重叠构造器模式：第一个构造器只有一个必要参数，第二个有一个可选参数，第三个有两个，以此类推，最后一个构造器有全部的可选参数。创建实例的时候，选择最短的列表参数的构造器<br/>
+（1）. 重叠构造器模式：第一个构造器只有一个必要参数，第二个有一个可选参数，第三个有两个，以此类推，最后一个构造器有全部的可选参数。创建实例的时候，选择最短的列表参数的构造器<br/>
 `结论：当有许多参数的时候，客户端代码会很难编写`<br/>
 
 ```java
@@ -101,7 +101,7 @@ public class NutritionFacts {
 }
 ```
 
-[2]. **Java Beans模式**：调用一个无参数构造器来创建对象，然后用setter方法设置每个必要的参数<br/>
+（2）. **Java Beans模式**：调用一个无参数构造器来创建对象，然后用setter方法设置每个必要的参数<br/>
 **评价**：有严重的缺点，构造过程被分配到几个过程中，JavaBean可能处于不一致的状态。需要程序员付出额外的努力来确保它的线程安全。
 
 ```java
@@ -140,7 +140,7 @@ public class NutritionFacts {
 }
 ```
 
-[3]. **建造者方法**：既能保证安全性，又能保证可读性。**最好一开始就使用Builder模式.**
+（3）. **建造者方法**：既能保证安全性，又能保证可读性。**最好一开始就使用Builder模式.**
 
 ```java
 public class NutritionFacts3 {
@@ -221,7 +221,7 @@ public class Client {
 
  先调用类的builder方法创建一个builder，再用setter设置各个参数（注意使用return this;可以构造参数链），最后调用builder返回一个类。
 
-a)	Builder可以进行域的检查，是否违反约束条件；<br/>
+a)    Builder可以进行域的检查，是否违反约束条件；<br/>
 b)	Builder可以有多个可变参数；<br/>
 c)	Builder方法可以自动填充域，也可以返回不同的对象；<br/>
 d)	使用泛型的builder；<br/>
@@ -293,7 +293,7 @@ public class UtilityClass {
 
 - (1)：如果对象不可变，就始终可以重用
 
-```java
+```
 
 String s = new String("aaa");//Don't do this!!
 
@@ -306,8 +306,8 @@ eg：Boolean.valueOf(String)总是优先于Boolean(String)；
 
 - (3)：重用一直不会被改变的可变对象
 
-```java
 
+```
 public class Person {
 
     private final Date birthDate;
@@ -322,8 +322,8 @@ public class Person {
         return birthDate.compareTo(boomStart) >= 0 && birthDate.compareTo(boomEnd) < 0;
     }
 
-
 }
+
 
 ```
 
@@ -391,4 +391,40 @@ ii.	使用后台线程来定期清理；<br/>
 iii.	对于更复杂的缓存，使用java.lang.ref<br/>
 
 - (3)：	监听器和回调：只保留弱引用
+
+###第7条：避免使用终结方法finalize()
+
+- (1):**终结方法不可预测，很危险**
+
+i.不能保证会及时被执行，甚至不能保证执行：time-critical的任务不应该由终结方法执行。例如关闭已经打开的文件（文件描述符是很有限的资源）
+
+ii.不能保证在所有的JVM上都得到同样的体验
+
+iii.可能随意延迟其实例的回收过程
+
+iv. **不应该依赖终结方法来更新重要的持久状态，例如分布式系统的永久锁**
+
+v.不要使用System.gc()等函数**
+
+- (2). 如果在终结方法执行时抛出未捕获异常，则此异常会被忽略，终结方法也将终止
+- (3).**非常严重的性能损失**
+- (4).使用显式的终止方法，并要求客户端在每个实例不再有用时调用这个方法。该实例必须记录自己是否被终止，终止后的调用要抛出异常。
+
+例子：InputStream的close函数， Timer的cancel函数等
+应该在try-catch块的finally部分调用这个显式终止方法
+
+```java
+
+Foo foo=new Foo();
+
+    try{
+
+    }catch{
+
+    }finally{
+        foo.terminate()
+    }
+    
+ ```
+        
 
