@@ -214,7 +214,7 @@ iii.	**不要把equals里声明的Object替换成其他类型，否则不是over
 
 ###第9条：覆盖equals时总要覆盖hashCode
 
-－ （1）. 约定
+- (1). 约定
 
 i.	对于任意一个对象，只要对象中涉及equals的关键域没有改变，所有的hashCode必须返回同样的整数结果
 
@@ -227,7 +227,7 @@ iii.	如果两个对象的equals返回不等，最好返回截然不同的整数
 
 ###第10条：始终要覆盖toString()
 
-－ (1).	所有的子类都应该覆盖toString()：让类使用起来更舒适
+－(1).	所有的子类都应该覆盖toString()：让类使用起来更舒适
 
 － (2). toString应该返回对象所包含的所有值得关注的信息
 
@@ -237,4 +237,118 @@ iii.	如果两个对象的equals返回不等，最好返回截然不同的整数
 
 - 值类：应该，如果指定了格式，就必须坚持，不能随意更改
 - toString包含的信息应该有API提供访问
-- 应该在文档里表现你的意图，
+- 应该在文档里表现你的意图
+
+###第11条：谨慎地覆盖clone()
+
+－(1). Object的clone方法是受保护的，所以实现cloneable接口并不能调用clone，除非使用反射机制。
+
+-(2). Cloneable接口的作用：**决定了Object中受保护的clone方法的实现行为**
+
+i.	**如果实现接口。Clone()会返回这个类的逐级拷贝**
+
+ii.	**如果不实现：抛出CloneNotSupportedException**
+
+iii.	实现了一种语言之外的机制：**无需调用构造器就可以创建对象**
+
+-(3). 约定（比较弱，不是绝对的要求）
+
+i.	x.clone(x) != x
+
+ii.	x.clone().getClass == x.getClass()
+
+iii.	x.clone().equals(x) == true
+
+-(4).	不调用构造器的规定太强硬：可以使用构造器/类是final的时候可能直接返回构造器创建的对象
+
+-(5). **如果覆盖了非final类的clone方法，就应该返回一个通过调用super.clone()而得到的对象**
+
+-(6).对于实现了Cloneable的类，我们希望它提供公有方法
+
+-(7).例子：
+
+```Java
+
+public PhoneNumber clone() {
+        try {
+            return (PhoneNumber) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();//can't happen
+        }
+    }
+
+```
+
+**注意clone返回的是PhoneNumber类：永远不要让客户做任何类库可以为他们做到的事情**
+
+- (8).实际上，clone方法是另一个构造器
+
+i.	不能伤害到原始对象
+
+ii.	正确创建被克隆对象中的约束条件
+
+iii.	例如：Stack类的clone方法应该在栈里递归调用clone
+
+iv.	如果某个域是final的，clone方法禁止给elements域赋新值：**可能需要去掉final修饰符**
+
+-(9). 最后一种办法：先调用super.clone，然后把所有的域置成空白状态，然后调用高层方法重现产生对象的状态：性能不高
+
+-(10). Clone不应该在构造的过程中调用新对象的任何非final方法：可能导致不一致
+
+-(11). 公有的clone方法
+i.	不应该抛出异常
+
+ii.	调用super.clone
+
+iii.	修正任何需要修正的域
+
+-(12). 如果要为了继承而覆盖clone方法应该
+
+i.	声明为protected，抛出异常
+
+ii.	不能实现cloneable接口
+
+-(12). Object的clone没有同步，应该实现同步
+
+-(13). 最好提供某些其他的途径来代替对象拷贝，或者不提供类似方法
+
+i.	拷贝构造器：public Yum(Yum yum)
+
+ii.	拷贝工厂：public static Yum newInstance(Yum yum)
+
+iii.	可以带一些其他参数
+
+-(13). 作为一个专门为继承而设计的类，如果不能提供良好的protected方法，子类就不能实现cloneable接口
+
+###第12条：考虑实现Comparable接口
+
+－（1）. 实现Comparable接口表明它的实例具有内在的排序关系。一旦类实现了Comparable接口，就可以和很多泛型算法进行协作。**如果你正在编写一个值类，并且具有非常明显的顺序关系，那么就应该坚决实现这个接口**
+
+- (2). compareTo方法约定
+
+i.	将当前对象与参数比较，当对象小于，等于或者大于参数时，返回一个负整数，0和正整数。**无法比较或者类不同时则抛出ClassCastException**。
+
+ii.	实现者必须满足自反性，传递性等性质.
+与equals相同，**我们无法在扩展可实例化的类的同时，既增加新的组件，又能保留compareTo约定。**权且之计也可以在这里使用
+
+iii.	compareTo施加的顺序关系应该同equals保持一致
+
+iv.	如果一个域没有实现compareTo或者需要一个非标准的排序，可以使用显式的Comparator来代替
+
+```java
+
+public final class CaseInsensitiveString implements Comparable<CaseInsensitiveString> {
+        public int compareTo(CaseInsensitiveString cis) {
+            return String.CASE_INSENSITIVE_ORDER.compare(s, cis.s);
+        }
+    }
+
+```
+
+注意这里实现的接口确保了比较时不能跨类型
+
+-(3). 比较的顺序
+
+i.	从最关键的域开始，如果出现非0结果，则比较结束
+
+ii.	返回减法结果是确认相关的域不能为负数
