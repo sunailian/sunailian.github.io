@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 《Effective Java》学习笔记
+title: 《Effective Java》第二章
 categories: [Effective Java, Java]
 description: 《Effective Java》学习笔记
 keywords: Effective Java, Java
