@@ -241,9 +241,9 @@ iii.	如果两个对象的equals返回不等，最好返回截然不同的整数
 
 ###第11条：谨慎地覆盖clone()
 
-－(1). Object的clone方法是受保护的，所以实现cloneable接口并不能调用clone，除非使用反射机制。
+－ (1). Object的clone方法是受保护的，所以实现cloneable接口并不能调用clone，除非使用反射机制。
 
--(2). Cloneable接口的作用：**决定了Object中受保护的clone方法的实现行为**
+- (2). Cloneable接口的作用：**决定了Object中受保护的clone方法的实现行为**
 
 i.	**如果实现接口。Clone()会返回这个类的逐级拷贝**
 
@@ -251,7 +251,7 @@ ii.	**如果不实现：抛出CloneNotSupportedException**
 
 iii.	实现了一种语言之外的机制：**无需调用构造器就可以创建对象**
 
--(3). 约定（比较弱，不是绝对的要求）
+- (3). 约定（比较弱，不是绝对的要求）
 
 i.	x.clone(x) != x
 
@@ -259,13 +259,13 @@ ii.	x.clone().getClass == x.getClass()
 
 iii.	x.clone().equals(x) == true
 
--(4).	不调用构造器的规定太强硬：可以使用构造器/类是final的时候可能直接返回构造器创建的对象
+- (4).	不调用构造器的规定太强硬：可以使用构造器/类是final的时候可能直接返回构造器创建的对象
 
--(5). **如果覆盖了非final类的clone方法，就应该返回一个通过调用super.clone()而得到的对象**
+- (5). **如果覆盖了非final类的clone方法，就应该返回一个通过调用super.clone()而得到的对象**
 
--(6).对于实现了Cloneable的类，我们希望它提供公有方法
+- (6).对于实现了Cloneable的类，我们希望它提供公有方法
 
--(7).例子：
+- (7).例子：
 
 ```Java
 
@@ -291,26 +291,26 @@ iii.	例如：Stack类的clone方法应该在栈里递归调用clone
 
 iv.	如果某个域是final的，clone方法禁止给elements域赋新值：**可能需要去掉final修饰符**
 
--(9). 最后一种办法：先调用super.clone，然后把所有的域置成空白状态，然后调用高层方法重现产生对象的状态：性能不高
+- (9). 最后一种办法：先调用super.clone，然后把所有的域置成空白状态，然后调用高层方法重现产生对象的状态：性能不高
 
--(10). Clone不应该在构造的过程中调用新对象的任何非final方法：可能导致不一致
+- (10). Clone不应该在构造的过程中调用新对象的任何非final方法：可能导致不一致
 
--(11). 公有的clone方法
+- (11). 公有的clone方法
 i.	不应该抛出异常
 
 ii.	调用super.clone
 
 iii.	修正任何需要修正的域
 
--(12). 如果要为了继承而覆盖clone方法应该
+- (12). 如果要为了继承而覆盖clone方法应该
 
 i.	声明为protected，抛出异常
 
 ii.	不能实现cloneable接口
 
--(12). Object的clone没有同步，应该实现同步
+- (13). Object的clone没有同步，应该实现同步
 
--(13). 最好提供某些其他的途径来代替对象拷贝，或者不提供类似方法
+- (14). 最好提供某些其他的途径来代替对象拷贝，或者不提供类似方法
 
 i.	拷贝构造器：public Yum(Yum yum)
 
@@ -318,7 +318,7 @@ ii.	拷贝工厂：public static Yum newInstance(Yum yum)
 
 iii.	可以带一些其他参数
 
--(13). 作为一个专门为继承而设计的类，如果不能提供良好的protected方法，子类就不能实现cloneable接口
+- (15). 作为一个专门为继承而设计的类，如果不能提供良好的protected方法，子类就不能实现cloneable接口
 
 ###第12条：考虑实现Comparable接口
 
@@ -347,7 +347,7 @@ public final class CaseInsensitiveString implements Comparable<CaseInsensitiveSt
 
 注意这里实现的接口确保了比较时不能跨类型
 
--(3). 比较的顺序
+- (3). 比较的顺序
 
 i.	从最关键的域开始，如果出现非0结果，则比较结束
 
