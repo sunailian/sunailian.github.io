@@ -242,7 +242,7 @@ public boolean equals(Object o) {
 
 ###第11条：谨慎地覆盖clone()
 
-－ (1). Object的clone方法是受保护的，所以实现cloneable接口并不能调用clone，除非使用反射机制。
+- (1). Object的clone方法是受保护的，所以实现cloneable接口并不能调用clone，除非使用反射机制。
 
 - (2). Cloneable接口的作用：**决定了Object中受保护的clone方法的实现行为**
 
