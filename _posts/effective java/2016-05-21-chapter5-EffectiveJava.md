@@ -235,7 +235,7 @@ public static <E> Set<E> union(Set<E> s1,Set<E> s2){
 
     Map<String, List<String>> anagrams = newHashMap();
 
-    ```
+```
 
 下文例子中的未受检异常是可以接受的，因为所有的代码都在我们的控制之下。
 
