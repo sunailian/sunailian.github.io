@@ -168,4 +168,221 @@ public final class Time {
 - (3). 超类在后续的发行版本获得新的方法，会影响子类。例如：子类有一个签名相同但是返回值不同的函数，这样会导致子类无法通过编译。如果返回值相同，那么等同于override。也不能保证子类的方法能够满足超类的约定
 
 - (4). 复合与转发方法
-灵活，健壮，InstrumentedSet类实现了Set接口并且拥有私有Set成员
++ i. 灵活，健壮，InstrumentedSet类实现了Set接口并且拥有私有Set成员
+
+```java
+
+public class ForwardingSet<E> implements Set<E> {
+    private final Set<E> s;
+
+
+    public ForwardingSet<E>(Set s){
+        this.s = s;
+    }
+
+    public  void clear(){
+        s.clear();
+    }
+
+    public boolean contains(Object o){
+        return s.contains(o);
+    }
+
+    public boolean isEmpty(){
+        return s.isEmpty();
+    }
+
+    public int size(){
+        return s.size();
+    }
+
+    public Iterator<E> iterator(){
+        return s.iterator();
+    }
+
+    public boolean add(E e){
+        return s.add(e);
+    }
+
+    public boolean containsAll(Collection<? extends E> e){
+        return s.containsAll(e);
+    }
+
+    public boolean addAll(Collection<? extends E> e){
+        return  s.addAll(e);
+    }
+}
+
+```
+
+```java
+
+public class InstrumentedSet<E> extends ForwardingSet<E> {
+
+private int addCount=0;
+
+    public InstrumentedSet<E>(Set<E> s){
+        super(s);
+    }
+
+    public boolean add(E e){
+        addCount++;
+        return super.add(e);
+    }
+
+}
+```
++ ii. 这样的类叫做包装类wrapper class，或者说装饰者模式decorator pattern。
+
++ iii. 包装类的缺点：不适合在回调框架下工作。在回调框架，对象吧自身的引用传递给其他的对象。
+
+- (5). 只有在子类真的是超类的子类型时，才应该是用继承。否则，B应该包含A的一个私有实例，并暴露一个较小的API。
+
+- (6). 如果在适合复合的时候使用了继承，那么会不必要的暴露细节。这样得到的API会限制在原始实现并限定了性能。客户端甚至可以直接访问内部细节。
+
+- (7). 继承机制会把超类所有的缺陷传播到子类，但是复合可以掩盖这些缺陷
+
+###第17条：要么为继承而设计并提供文档，要么禁止继承
+
+- (1). 该类的文档必须精确的描述覆盖每个方法所带来的影响：自用性说明。
+
+- (2). 类必须说明在哪些情况下会调用可覆盖的方法
+
+- (3). 按照惯例，如果方法调用了可覆盖的方法，在它的文档末尾应该包含关于这些调用的描述信息，以“This implementation …”开头。这段描述关注该方法的内部实现细节。这违反了封装性，因为文档里不应该关注实现细节
+
+- (4). 类可以通过钩子hook以便能够进入方法的实现内部。这样的方法可以是protected方法
+
+- (5). 最佳实现：
+
++ i.	在发布之前编写子类进行大量测试
++ ii.	对于并非为了安全的进行子类化而设计和编写文档的类，要禁止子类化
+ A.	声明final
+ B.	构造器包级私有并使用静态工厂（更灵活）
++ iii.	如果一定要允许继承，一种合理的方法是确保这个类永远不会调用自身任何可覆盖方法，并在文档中说明。使用helper method，把可覆盖方法的代码体移到私有的方法并调用这个方法
+
+- (6). 其他约束
+
++ i.	构造器决不能调用可覆盖的方法，否则会导致意外
+
++ ii.	谨慎的使用Cloneable接口和Serializable接口：clone和readObject方法   同样不能调用可覆盖的方法
+
++ iii.	如果在一个为继承而设计的类实现Serializable接口，就必须让readResolve方法成为受保护的方法：为了继承而暴露实现细节
+
+###第18条：接口与抽象类
+
+- (1). 接口的优势
+
++ i.	**现有的类可以很容易被更新，已实现新的接口。**
+      扩展抽象类就必须把抽象类放到类层次的高处。间接伤害类层次
+
++ ii.	接口是定义mixin的理想选择。
+
+Mixin：类除了它的基本类型，还可以实现这个mixin类型，以表明他提供了某些可供选择的行为，例如comparable接口。抽象类不能成为mixin，因为他们不能被更新到现有的类里
+
++ iii.	接口允许我们构造非层次的类框架。
+一个人可以同时是singer和songwriter，而且可以针对这种组合实现特殊的第三个接口。这样避免了类的组合爆炸。通过修饰者模式，接口可以安全地增强类的功能。
+
+```java
+
+public interface Singer {
+    AudioClip sing(Song s);
+}
+
+public interface SongWriter{
+    Song compose(boolean hit);
+}
+
+public interface SingerSongWriter extends Singer,SongWriter{
+    AudioClip strum();
+    void actSensitive();
+}
+
+```
+
++ iv.	对每一个接口都最好提供一个抽象的骨架实现类skeleton implementation，把接口和抽象类的优势结合起来
+按照惯例，骨架实现被称为AbstractInterface. 如果设计得当，骨架实现可以使程序员很容易提供他们自己的接口实现
+
+```java
+
+static List<Integer> initArrayAsList(final int[] a) {
+        if (a == null)
+            return NullPointerException;
+
+        return new AbstractList<Integer>({
+               public Integer get (i) {
+               return a[i];
+        }
+
+        public Integer set ( int i, Integer val){
+            int oldVal = a[i];
+            a[i] = val;
+            return oldVal;
+        }
+        });
+
+    }
+
+```
+
+例子里提供了一个匿名类，被隐藏在静态工厂的内部。
+
+- (2). 骨架实现类
+
++ i.	它们为抽象类提供了实现上帮助，但又不强加“抽象类被用作类型定义”时所特有的严格限制
+
++ ii.	如果预置的类无法拓展骨架实现类，这个类始终可以实现对应的接口。实现了这个接口的类可以把接口方法的调用转发到一个内部私有类的实例上，这个实例扩展了骨架实现类。这种方法叫做**模拟多重继承**。
+
++ iii.	编写骨架类：
+
+A. 研究接口，确定哪些方法是最为基本的。基本方法将成为抽象类的抽象方法，其他的方法需要抽象类提供具体的最简单的有效实现。    
+
+```java
+
+//Skeletal Implementation
+public abstract class AbastractMapEntry<K, V> implements Map.Entry<K, V> {
+
+    //primitive operations
+    public abstract K getKey();
+
+    public abstract V getValue();
+
+    //Entries in modifiable maps must override this method
+    public V setValue(V value) {
+        throw new UnsupportedOperationException();
+    }
+
+    //Implements the general contract of Map.Entry.equals
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Map.Entry)) {
+            return false;
+        }
+        Map.Entry arg = (Map.Entry) o;
+        return equals(getKey(), arg.getKey()) && equals(getValue(), arg.getValue());
+    }
+
+    private static boolean equals(Object o1, Object o2) {
+        return o1 == null ? o2 == null : o1.equals(o2);
+    }
+
+    //Implements the general contract of Map.Entry.hashCode
+    public int hashCode() {
+        return hashCode(getKey() ^ hashCode(getValue()));
+    }
+
+    private static int hashCode(Object o) {
+        return o == null ? 0 : o.hashCode();
+    }
+
+}
+
+```
+
+- (3). 抽象类的优势
+
++ i.	抽象类的演变要比接口的演变更加容易
+如果想在后续的发行版本里加入新的方法，抽象类始终可以实现具体方法，并且所有实现都能使用新方法。接口一旦被公开发行并实现，就不能更改
+
++ ii.	发行接口之前必须尽可能测试接口
