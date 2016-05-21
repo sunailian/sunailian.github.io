@@ -616,6 +616,7 @@ public class Host {
 
       D.	过程对象：例如Runnable
 
+
  + iv.	局部类
 
      A.	用在任何可以创建局部变量的地方，有名字，可以重复使用。

@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 《Effective Java》第四章
+title: 《Effective Java》第五章
 categories: [Effective Java, Java]
 description: 《Effective Java》学习笔记
 keywords: Effective Java, Java
@@ -13,3 +13,17 @@ comments: true
 标签（空格分隔）： Effective Java
 
 ---
+
+###第23条：不要在新代码中使用原生态类型
+
+- (1). 泛型的原生态类型：List<E>对应的是不带任何实际参数类型的List。如果使用原生态类型，比如只使用List而不是List<E>，容易出错。可能在add的时候不会发生错误，但是在get的时候，可能会发生`ClassCastException`
+
+- (2). 泛型的优点：
+
+ + i.	插入元素时自带类型检查
+ + ii.	删除元素是不需要进行手工转换
+ + iii.	可以使用for-each循环，两种方法
+ + iv. 如果使用原生态类型，就失掉了泛型仔安全性和表述性方面的所有优势。`虽然不应该使用像List这种原生态类型，但是可以却允许使用参数话的类型以允许插入任意对象，如List<Object>。相比于原生的，object参数化不会失掉泛型的安全性。`
+
+ - (3). 无限制通配符类型
+ 如果要使用泛型，但不确定或者不关心实际的类型参数，就可以使用问号<?>代替。表明可以持有任何集合。
