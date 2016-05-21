@@ -300,7 +300,7 @@ public interface SingerSongWriter extends Singer,SongWriter{
 
 ```
 
-+ iv.	对每一个接口都最好提供一个抽象的骨架实现类skeleton implementation，把接口和抽象类的优势结合起来
+ + iv.	对每一个接口都最好提供一个抽象的骨架实现类skeleton implementation，把接口和抽象类的优势结合起来
 按照惯例，骨架实现被称为AbstractInterface. 如果设计得当，骨架实现可以使程序员很容易提供他们自己的接口实现
 
 ```java
@@ -387,3 +387,79 @@ public abstract class AbastractMapEntry<K, V> implements Map.Entry<K, V> {
 如果想在后续的发行版本里加入新的方法，抽象类始终可以实现具体方法，并且所有实现都能使用新方法。接口一旦被公开发行并实现，就不能更改
 
  + ii.	发行接口之前必须尽可能测试接口
+
+###第19条：接口只用于定义类型
+
+- (1).常量接口是对接口的不良使用，不要这么做
+常量接口代表了一种承诺：在将来的发行版本里，如果这个类被修改不需要使用常量了，它依然必须实现这个接口。如果非final类实现了常量接口，它的子类也会被污染
+
+- (2). 导出常量的其他方法
+
+ + i. **如果常量与某个现有的类密切相关，就应该把这些常量添加到这个类或接口中。例如Interger.MIN_VALUE**。可以考虑使用**枚举类型**或者**不可实例化的工具类**
+
+ + ii.	如果不想使用类名修饰常量名，应该利用Java静态导入机制
+
+```java
+
+//Use of static import to avoid qualifying constants
+import static com.effective.java.science.PhysicConstant
+
+public class Test{
+
+   double atoms(double mols){
+       return AVOGADROS_NUMBER * mols;
+   }
+
+}
+
+```
+
+###第20条：类层次优于标签类
+
+- (1). 标签类的缺点
+
+ + i.	标签类破坏了可读性。
+ + ii.	标签类占用了额外内存。
+ + iii.	域不能做成final的
+ + iv.	无法给标签类添加新的风格而不修改源代码
+ + v.	实例没有提供任何关于其风格的线索
+
+```java
+
+// 标签类:一个圆规类
+public class Figure {
+
+   enum Shape {RECTANGLE, CIRCLE} ;
+
+   //Tag field - the shape of this figure
+   final Shape shape;
+
+   //These fields are used only if shape is RECTANGLE
+   double length;
+   double width;
+
+   //This field is used only if shape is CIRCLE
+   double radius;
+
+   //Constructor for circle
+   Figure(double radius) {
+       shape = Shape.CIRCLE;
+       this.radius = radius;
+   }
+
+   //Constructor for rectangle
+   Figure(double length, double width) {
+       this.shape = Shape.RECTANGLE;
+       this.len
+
+```
+
+- (2). 标签类实际是类层次的简单效仿
+- (3). 把标签类转化成类层次
+ + i.	为标签类的每个依赖标签值方法、数据域都定义一个包含抽象方法的抽象类
+ + ii.	不依赖标签值的方法和数据域放到父类中
+ + iii.	子类的所有域都应该是final的
+ - (4). 类层次的好处
+ + i.	简单清楚，可读性好
+ + ii.	可以反应类型之前本质上的层次关系，有助于增强灵活性，并进行更好的编译时检查
+- (5). 标签类几乎没有使用的时候，使用标签类就要考虑是否重构成类层次
