@@ -36,7 +36,7 @@ comments: true
  形式类型参数|E
  无限制通配符类型|List<?>
  原生态类型|List
- 有限制类型参数|<E extends Number>
+ 有限制类型参数|`<E extends Number>`
  递归类型限制|<T extends Comparable<T>>
  有限制通配符类型|List<? extends Number>
  泛型方法|static <E> List<E> asList(E[] a)
