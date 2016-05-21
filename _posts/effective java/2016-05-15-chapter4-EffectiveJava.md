@@ -451,6 +451,7 @@ public class Figure {
    Figure(double length, double width) {
        this.shape = Shape.RECTANGLE;
        this.len
+   }
 
 ```
 
@@ -463,3 +464,118 @@ public class Figure {
  + i.	简单清楚，可读性好
  + ii.	可以反应类型之前本质上的层次关系，有助于增强灵活性，并进行更好的编译时检查
 - (5). 标签类几乎没有使用的时候，使用标签类就要考虑是否重构成类层次
+
+```java
+
+// 层次类代替标签类
+public abstract class Figure {
+
+   abstract double area();
+
+}
+
+class Circle extends Figure {
+   final double radius;
+
+   Circle(double radius) {
+       this.radius = radius;
+   }
+
+   double area() {
+       return Math.PI * (radius * radius);
+   }
+}
+
+class Rectangle extends Figure {
+   final double length;
+   final double width;
+
+   Rectangle(double length, double width) {
+       this.length = length;
+       this.width = width;
+   }
+
+   double area() {
+       return length * width;
+   }
+}
+
+```
+
+###第21条：用函数对象表示策略
+
+- (1). 类似C语言的函数指针（策略模式），在Java里有函数对象，这种实例的方法是执行在其他对象上的某种操作。或者说是某种操作的具体策略。
+
+```Java
+
+public class StringLengthComparator {
+
+   public int compare(String s1, String s2) {
+       return s1.length() - s2.length();
+   }
+}
+
+```
+
+StringLengthComparator实例是用于字符串比较操作的｀具体策略｀。
+作为典型的策略类，StringLengthComparator类是无状态的(stateless)：它没有域，所以这个类的所有实例在功能上都是相互等价的。因此，它作为一个Singleton是非常合适的，可以节省不必要的对象创建开销。
+
+```java
+
+public class StringLengthComparator {
+
+   private StringLengthComparator() {};
+
+   public final StringLengthComparator INSTANCE = new StringLengthComparator();
+
+   public int compare(String s1, String s2) {
+       return s1.length() - s2.length();
+   }
+
+}
+
+```
+
+- (2). 策略接口：策略类应该extends的接口，需要使用泛型实现
+
+```java
+
+public interface Comparator<T>{
+   public int compare(T t1,T t2);
+}
+
+```
+
+- (3). 策略类的具体实现
+ + i.	大部分时候使用匿名类
+
+ ```java
+
+ Arrays.sort(stringArray,new Comparator<String>({
+         public int compare(String s1,String s2){
+             return s1.length-s2.length;
+         }
+     }));
+
+ ```
+ + ii.	如果策略类需要经常调用，就应该将这个类保存在一个私有静态final域中。
+- (4). 宿主类：避免把具体策略导成公共类，具体策略是宿主类的私有嵌套类
+
+```Java
+
+//Exporting a concrete strategy
+public class Host {
+
+   private static class StrLenCmp implements Comparator<String>, Serializable {
+       public int compare(String s1, String s2) {
+           return s1.length() - s2.length();
+       }
+   }
+
+   //returned comparator is serializable
+   public static final Comparator<String> STRING_LENGTH_COMPARATOR = new StrLenCmp();
+}
+
+```
+
+**如果自己实现，可能会把策略类做成public的，相反，可以用私有嵌套类**
