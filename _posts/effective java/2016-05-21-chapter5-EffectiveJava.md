@@ -292,3 +292,176 @@ public static <T extends Comparable<T>> T max(List<T> list){
 
 
 ```
+
+###第28条：利用有限制通配符来提升API的灵活性
+
+- (1). 假设我们有一个泛型Number的Stack，我们想把Integer加入这个Stack中，尽管直观上是可以的，并且push(intVal)也是可以的，但是下面这个方法是错误的
+
+```Java
+//pushAll method without wildcard type -deficient!
+public void pushAll(Iterable<E> src){
+  for(E e : src){
+    push(e);
+  }
+}
+
+```
+
+因为泛型是不可具体化的类，Iterable<Integer>并不是Iterable<Number>的子类
+使用有限制的通配符：<? extends E>
+
+```Java
+//wildcard type for parameter that serves as an E producer
+public void pushAll(Iterable<? extends E> src){
+  for(E e : src){
+    push(e);
+  }
+}
+
+```
+- (2). 相对应的，如果想把元素pop到一个给定的集合，那么下面这个方法是错误的
+
+```Java
+//popAll method without wildcard type - deficient
+public void popAll(Collection<E> dst){
+  while(!isEmpty){
+    dst.add(pop());
+  }
+}
+
+```
+
+原因相同。此时应该使用有限制的通配符：<? super E>
+
+```Java
+
+//wildcard type for parameter that serves as an E consumer
+public void popAll(Collection<? super E> dst){
+  while(!isEmpty)
+      dst.add(pop());
+}
+
+```
+
+- (3). 原则：PECS， producer extends；consumer super。【函数调用者】生产数据给方法所在的实例：extends；【函数调用者】从实例里获得数据：super
+
+- (4). 因此，之前的合并集合操作，其签名应该是
+
+```Java
+
+public static <E> Set<E> union (Set<? extends E> s1,Set<? extends E> s2)
+
+```
+
+- (5). 下面这个方法是错误的，类型推导无法得出正确的结果
+
+```Java
+Set<Integer> integers = ....;
+Set<Double> doubles = ... ;
+Set<Number> numbers = union(integers,doubles);
+
+```
+
+这个时候我们需要显式声明类型:
+
+```Java
+Set<Number> numbers = Union.<Number> union(integers,double);
+
+```
+
+- (6). 之前的max操作，其签名应该声明为
+
+```Java
+public static <T extends Comparable<? super T>> T max(List<? extends T> list)
+
+```
+
+为了从初始声明中得到修改后的版本，要应用pecs转换两次。最直接的上运用到参数list。它产生T实例，因此将类型从List<T> 改成 List<? extends T>。更灵活的是运用到类型参数T.这是我们第一次见到将通配符运用到类型参数，最初T被指定用来扩展Comparable<T>，但是T的Comparable消费T实例（并产生表示顺序关系的整值）。因此，参数化类型Comparable<T>被有限制通配符类型Comparable<? super T>取代。comparable始终是消费者，因此`使用时始终应该是Comparable<? super T>优先于Comparable<T>`。对于comparator也是一样。
+
+- (7). 无限制的通配符与无限制的类型参数
+
+```Java
+
+//Two possible declarations for the swap method
+public static <E> void swap(List<E> list,int i,int j);
+public static void swap(List<?> list,int i,int j);
+
+```
+ + i.	如果类型参数只出现一次，那就应该使用通配符
+ + ii.	无限制的类型参数阻止调用者将任何非null的元素加入已有集合。也即List<?>不能放入任何参数
+ + iii.	解决方法：使用辅助方法。把泛型声明暴露给用户，在内部使用私有的实现
+
+```Java
+public static void swap(List<?> list,int i,int j){
+  swapHelper(list,i,j);
+}
+
+//private helper method for wildcard capture
+private static <E> void swapHelper(List<E> list,int i,int j){
+  list.set(i,list.set(j,list.get(i)));
+}
+
+```
+
+###第29条：优先考虑类型安全的异构容器
+
+- (1). 问题：使用类型安全的方式访问数据库的所有列，避免使用原生态
+解决：**将Key参数化，而不是将container参数化**
+**使用Class<T>, T这样的键值对，这被称为类型安全的异构容器**
+
+```Java
+
+//Typesafe heterogeneous container pattern - implementation
+public class Favorites{
+   private Map<Class<?>,Object> favorites = new HashMap<Class<?>,Object>();
+
+   public <T> void putFavorite(Class<T> type,T instance){
+     if(type == null){
+       throw new NullPointerException("Type is Null");
+     }
+     favorites.put(type,instance);
+   }
+
+   public <T> getFavorite(Class<T> type){
+     return type.cast(favorites.get(type));
+   }
+
+}
+
+
+//Typesafe heterogeneous container pattern -client
+public static void public static void main(String[] args) {
+  Favorites f = new Favorites();
+  f.putFavorite(String.class,"Java");
+  f.putFavorite(Integer.class,0xcafebabe);
+  f.putFavorite(Class.class,Favorites.class);
+  String favoriteString = f.getFavorite(String.class);
+  int favoriteInteger = f.getFavorite(Integer.class);
+  Class<?> favoriteClass = f.getFavorite(Class.class);
+  System.out.printf("%s %x %s%n",favoriteString,favoriteInteger,favoriteClass.getName());
+}
+
+```
+
+**注意：**
+
+ + i.	Map的值是Object，这样不保证键值一样，但是我们的代码确保了这一点
+ + ii.	getFavorite方法做了类型转换
+
+- (2). 该容器的局限性
+
+ + i.	放入时有可能破坏键值约定
+      解决方法：**放入时进行转换，同时节省了检查指针为空**
+
+```Java
+
+//Achiving runtime type safety with a dynamic cast
+public <T> void putFavorite(Class<T> type,T instance){
+  favorites.put(type,type.cast(instance));
+}
+
+```      
+
+ + iii.	不能用在不可具体化的类上，例如List<String>.class是不存在的
+
+- (3). 使用注解API
