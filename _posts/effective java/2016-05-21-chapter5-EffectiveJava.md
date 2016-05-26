@@ -343,7 +343,9 @@ public void popAll(Collection<? super E> dst){
 
 ```
 
-- (3). 原则：PECS， producer extends；consumer super。【函数调用者】生产数据给方法所在的实例：extends；【函数调用者】从实例里获得数据：super
+- (3). 原则：PECS， producer extends；consumer super。
+      【函数调用者】生产数据给方法所在的实例：extends；
+      【函数调用者】从实例里获得数据：super
 
 - (4). 因此，之前的合并集合操作，其签名应该是
 
@@ -406,7 +408,9 @@ private static <E> void swapHelper(List<E> list,int i,int j){
 ###第29条：优先考虑类型安全的异构容器
 
 - (1). 问题：使用类型安全的方式访问数据库的所有列，避免使用原生态
+
 解决：**将Key参数化，而不是将container参数化**
+
 **使用Class<T>, T这样的键值对，这被称为类型安全的异构容器**
 
 ```Java
