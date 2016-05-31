@@ -1,9 +1,4 @@
 ---
-
-import com.sun.org.apache.xpath.internal.operations.Plus;
-import java.rmi.server.Operation;
-import java.util.*;
-
 layout: post
 title: 《Effective Java》第六章
 categories: [Effective Java, Java]
