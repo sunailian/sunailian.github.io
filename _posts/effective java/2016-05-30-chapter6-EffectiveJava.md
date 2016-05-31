@@ -118,8 +118,11 @@ public enum Operation{
 ```
 
 这段代码的脆弱之处：
+
 - 如果没有throw语句就不能编译
+
 - 加入新的计算方法时，如果忘记在switch里加入条件，**无法在编译时得到错误**：
+
 - 一个好的解决方法：**在枚举类型中声明一个抽象的apply方法，并在特定于常量的类主体中，用具体的方法覆盖每个常量的抽象方法。这叫做constant-specific method implementation**
 
 ```Java
@@ -171,6 +174,7 @@ public enum Operation {
 ```
 
 这样如果忘记添加，就会得到编译错误
+
 - (11). 与toString相对应的fromString方法：使用共有静态常量域+Map
 
 ```Java
