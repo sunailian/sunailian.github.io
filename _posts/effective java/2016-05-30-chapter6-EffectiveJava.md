@@ -22,6 +22,15 @@ comments: true
  + 十分脆弱，如果和枚举常量相关的int类型发生变化，客户端就必须重新编译
  + 没法把枚举常量打印或者遍历
 
+ ```Java
+
+//The int enum pattern - serverely deficient
+public static final int APPLE_FUJI = 0;
+public static final int APPLE_PIPPEN = 1;
+
+
+ ```
+
 - (3). String枚举模式，更糟糕
  + 性能问题，依赖字符串比较
  + 导致用户把字符串常量强行编码，可变性差而且容易出错
@@ -281,3 +290,151 @@ public static Operation inverse(Operation op){
 ```
 
 - (14). 使用枚举的时候：需要一组固定常量，或者编译时就知道所有可能值的集合
+
+###第31条：用实例域代替序数
+
+- (1). 永远不要使用ordinal()来获得序数。所有的序数都应该保存在实例域里
+
+```Java
+
+// Abuse if ordinal to derive an assosiate value - DON'T DO THIS
+public enum Ensemble {
+    SOLO, DUET, TRIO, QUARTET, QUINTET,
+    SEXTET, SEPTET, OCTET,
+    NONET, DECTET;
+
+    private final int numberOfMusicians{return ordinal() +1 };
+}
+
+```
+
+- (2). Ordinal()用在enumSet这样的类中，如果不编写这样的类就不要使用这个函数
+
+```Java
+
+// Enum with integer data stored in an instance field
+public enum Ensemble {
+    SOLO(1), DUET(2), TRIO(3), QUARTET(4), QUINTET(5),
+    SEXTET(6), SEPTET(7), OCTET(8), DOUBLE_QUARTET(8),
+    NONET(9), DECTET(10), TRIPLE_QUARTET(12);
+
+    private final int numberOfMusicians;
+    Ensemble(int size) { this.numberOfMusicians = size; }
+    public int numberOfMusicians() { return numberOfMusicians; }
+}
+
+```
+
+
+###第32条：用EnumSet代替位域
+
+- (1). 位域的通常做法
+
+```Java
+
+//Bit field enumeration constants - OBSOLETE
+public class Text{
+  public static final STYLE_BOLD = 1 << 0; // 1
+  public static final STYLE_ITALIC = 1 << 1; // 2
+  public static final STYLE_UNDERLINE = 1 << 2; // 4
+  public static final STYLE_STRIKETHROUGH = 1 << 3;//8
+
+  //Parameter is bitwise or if zero or more STYLE_constants
+  public void applyStyles(int style){...}
+
+}
+
+```
+
+- (2). 位域的不足之处：
+
+ + 使用方便性和类型安全方面没帮助
+ + 没法把枚举常量打印或者遍历
+
+ - (3). EnumSet的做法：
+
+ ```Java
+
+ // EnumSet - a modern replacement for bit fields - Page 160
+ public class Text {
+     public enum Style { BOLD, ITALIC, UNDERLINE, STRIKETHROUGH }
+
+     // Any Set could be passed in, but EnumSet is clearly best
+     public void applyStyles(Set<Style> styles) {
+         // Body goes here
+     }
+
+     // Sample use
+     public static void main(String[] args) {
+         Text text = new Text();
+         text.applyStyles(EnumSet.of(Style.BOLD, Style.ITALIC));
+     }
+ }
+
+ ```
+
+使用EnumSet更加灵活
+
+###第33条：用EnumMap代替序数索引
+
+- (1). 来看一个错误案例
+
+```Java
+
+public class Herb{
+  public enum Type{ANNUAL,PERENNIAL,BIENNIAL}
+
+  private final String name;
+  private final Type type;
+
+  Herb(String name,Type type){
+    this.name = name;
+    this.type = type;
+  }
+
+  public String toString(){
+    return name;
+  }
+}
+
+
+//Using ordinal() to index an array - DON'T DO THIS
+Herb[] garden = ...;
+Set<Herb> herbsByType = // Indexed by Herb.Type.ordinal()
+     (Set<Herb>[])new Set[Herb.Type.values().length];
+for (int i =0;i<herbsByType.length ; i++) {
+  herbsByType[i] = new HashSet<Herb>();
+}
+
+for (Herb h:garden) {
+  herbsByType[h.type.ordinal()].add(h);
+}
+
+//Print the results
+for (int i = 0;i<herbsByType.length ;i++ ) {
+  System.out.print("%s:%s%n",Herb.Type.values()[i],herbsByType[i]);
+}
+
+```
+
+这段代码的不足之处在于：**使用错误的int值无法在编译时得到警告，难以查错**
+
+```Java
+
+//Using an EnumMap to assosiate data with an enum
+Map<Herb.Type,Set<Herb>> herbsByType = new EnumMap<Herb.Type,Set<Herb>>(Herb.Type.class);
+for(Herb.Type t : Herb.Type.values()){
+  herbsByType.put(t,new HashSet<Herb>());
+}
+
+for (Herb h : garden ) {
+  herbsByType.get(h.type).add(h);
+}
+
+System.out.println(herbsByType);
+
+```
+
+用EnumMap改写过的版本没有安全转换，不会出现索引问题
+
+- (2). 一个更复杂的例子：给定两个状态，求出两个状态之间转换的行为
