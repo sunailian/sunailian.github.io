@@ -438,3 +438,260 @@ System.out.println(herbsByType);
 用EnumMap改写过的版本没有安全转换，不会出现索引问题
 
 - (2). 一个更复杂的例子：给定两个状态，求出两个状态之间转换的行为
+
+###第34条：使用接口模拟可伸缩的枚举
+
+- (1). 可伸缩性：**让一个枚举类型去拓展另一个枚举类型。目前还没有很好的方法来枚举基本类型的所有元素及其扩展。**
+- (2). 典型用例：操作码，opcode。枚举加接口实现。枚举类型虽然不可拓展，但是接口是可以拓展的。如果想写一个“子类”，那么重新编写一个枚举类并且实现接口即可。
+
+```Java
+
+// Emulated extension enum - Page 166-167
+
+import java.util.*;
+
+public enum ExtendedOperation implements Operation {
+    EXP("^") {
+        public double apply(double x, double y) {
+            return Math.pow(x, y);
+        }
+    },
+    REMAINDER("%") {
+        public double apply(double x, double y) {
+            return x % y;
+        }
+    };
+
+    private final String symbol;
+    ExtendedOperation(String symbol) {
+        this.symbol = symbol;
+    }
+    @Override public String toString() {
+        return symbol;
+    }
+
+    // Test class to exercise all operations in "extension enum" - Page 167
+    public static void main(String[] args) {
+        double x = Double.parseDouble(args[0]);
+        double y = Double.parseDouble(args[1]);
+        test(ExtendedOperation.class, x, y);
+
+        System.out.println();  // Print a blank line between tests
+        test2(Arrays.asList(ExtendedOperation.values()), x, y);
+    }
+
+    // test parameter is a bounded type token  (Item 29)
+    private static <T extends Enum<T> & Operation> void test(
+            Class<T> opSet, double x, double y) {
+        for (Operation op : opSet.getEnumConstants())
+            System.out.printf("%f %s %f = %f%n",
+                              x, op, y, op.apply(x, y));
+    }
+
+    // test parameter is a bounded wildcard type (Item 28)
+    private static void test2(Collection<? extends Operation> opSet,
+                              double x, double y) {
+        for (Operation op : opSet)
+            System.out.printf("%f %s %f = %f%n",
+                              x, op, y, op.apply(x, y));
+    }
+}
+
+```
+
+- (2). 使用测试函数遍历所有枚举
+ + 方法1：使用有限制的类型令牌
+
+ ```Java
+public static void main(String[] args){
+  double x = Double.parseDouble(args[0]);
+  double y = Double.parseDouble(args[1]);
+  test(ExtendedOperation.class,x,y);
+}
+
+private static <T extends Enum<T> & Operation> void test(Class<T> opSet,double x,double y){
+  for(Operation op : opSet.getEnumConstants()){
+    System.out.printf("%f %s %f = %f%n",x,op,y,op.apply(x,y));
+  }
+}
+
+ ```
+
+ + 方法2：使用有限制的通配符
+
+```Java
+public static void main(String[] args){
+  double x = Double.parseDouble(args[0]);
+  double y = Double.parseDouble(args[1]);
+  test(ExtendedOperation.class,x,y);
+}
+
+private static  void test(Collection<? extends Operation> opSet,double x,double y){
+  for(Operation op : opSet.getEnumConstants()){
+    System.out.printf("%f %s %f = %f%n",x,op,y,op.apply(x,y));
+  }
+}
+
+```
+
+- (3). values()方法是编译器插入到enum定义中的static方法，所以，当你将enum实例向上转型为父类Enum时，values()就不可访问了。解决办法：在Class中有一个getEnumConstants()方法，所以即便Enum接口中没有values()方法，我们仍然可以通过Class对象取得所有的enum实例
+
+
+###第35条：注解优先于命名模式
+
+- (1). 命名模式的缺点
+ + 拼写错误会导致失败而且没有任何提示。例子：Junit要求用户以test开始，但是拼写错误会导致JUint不报错也不执行相应的测试程序
+ + 命名模式不能用在特定的程序元素上。例子：在类名前加test不能自动执行这个类的所有方法。
+ + 命名模式不能把参数值和程序元素关联起来。如果测试在抛出某个特定异常时才算通过，就不能把异常编码进函数名中。
+- (2). 使用注解
+
+```Java
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Test{
+
+}
+
+```
+
+- 第一行注解：test注解在运行时保留
+- 第二行注解：test注解只有在方法中才是合法的，不能用在其他程序元素上
+- 注意：**test注解只能用在无参数的静态方法上**
+
+```Java
+
+// Program containing marker annotations - Page 170
+public class Sample {
+    @Test public static void m1() { }  // Test should pass
+    public static void m2() { }
+    @Test public static void m3() {    // Test Should fail
+        throw new RuntimeException("Boom");
+    }
+    public static void m4() { }
+    @Test public void m5() { } // INVALID USE: nonstatic method
+    public static void m6() { }
+    @Test public static void m7() {    // Test should fail
+        throw new RuntimeException("Crash");
+    }
+    public static void m8() { }
+}
+
+```
+
+Sample类有8个静态方法，其中4个被注解位测试。这4个中有2个抛出了异常：m3和m7。另外两个则没有：m1和m5。但是其中有一个没有抛出异常的被注解方法：m5，是一个实例方法，因此不属于注解的有效使用。总之，Sample包含4项测试：一项会通过，两项会失效，另一项无效。没有用Test注解进行标注的4个方法会被测试工具忽略。
+
+- (3). 添加对抛出特定异常的testcase的检查
+
+```Java
+
+// Annotation type with an array parameter -  Page 173
+
+import java.lang.annotation.*;
+
+/**
+ * Indicates that the annotated method is a test method that
+ * must throw the any of the designated exceptions to succeed.
+ */
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface ExceptionTest {
+    Class<? extends Exception> value();
+}
+
+
+// Program containing annotations with a parameter - Page 172
+
+import java.util.*;
+
+public class Sample2 {
+    @ExceptionTest(ArithmeticException.class)
+    public static void m1() {  // Test should pass
+        int i = 0;
+        i = i / i;
+    }
+    @ExceptionTest(ArithmeticException.class)
+    public static void m2() {  // Should fail (wrong exception)
+        int[] a = new int[0];
+        int i = a[1];
+    }
+    @ExceptionTest(ArithmeticException.class)
+    public static void m3() { }  // Should fail (no exception)
+
+
+}
+
+
+```
+
+注意：有可能注解参数在编译时是有效的，但是表示特定异常类型的类文件在运行时不再存在，此时会抛出TypeNotPresentException
+
+- (4). 添加对抛出任意一种指定异常的testcase的支持
+
+```Java
+
+// Code containing an annotation with an array parameter - Page 174
+@ExceptionTest({ IndexOutOfBoundsException.class,
+            NullPointerException.class })
+public static void doublyBad() {
+    List<String> list = new ArrayList<String>();
+
+    // The spec permits this method to throw either
+    // IndexOutOfBoundsException or NullPointerException
+    list.addAll(5, null);
+}
+
+```
+
+###第36：坚持使用override注解
+
+```Java
+
+//Can you spot the bug
+public class Bigram{
+  private final char first;
+  private final char second;
+
+  public Bigram(char first,char second){
+    this.first = first;
+    this.second = second;
+  }
+
+  public boolean equals(Bigram b){
+    return b.first ==first && b.second == second;
+  }
+
+  public int hashCode(){
+    return 31 * first * second;
+  }
+
+  public static void main(String[] args) {
+    Set<Bigram> s = new HashSet<Bigram>();
+    for (int i = 0;i<10 ;i++ ) {
+      for (char ch = 'a';ch <= 'z' ;ch++ ) {
+        s.add(new Bigram(ch,ch));
+      }
+      System.out.println(s.size());
+    }
+  }
+}
+
+```
+
+- (1). 这个程序的错误在于：他没有覆盖equals而是重载了equals
+- (2). **应该在你想要覆盖超类声明的每个方法声明中使用@override注解**。覆盖抽象方法或者接口时也最好加注解，这样能防止添加新方法
+
+###第37条：用标记接口定义类型
+- (1). 标记接口是没有包含方法声明的接口。例子：Serializable接口
+- (2). 标记接口可以不改进任何方法的契约，只表示整个对象的限制条件，或者表明实例能够利用其它某个类的方法进行处理。
+- (3). 标记接口相对于标记注解的优势
+ + 标记接口定义的类型是由被标记类的实例实现的；标记接口没有定义这样的类型
+如果参数没有实现Serializable接口，ObjectOutputStream.write会在运行时失败
+ + 标记接口可以被更加精确的锁定
+- (3). 标记注解的优势
+ + 可以通过默认的方法添加一个或者多个注解类型元素，给被使用的注解类型添加更多的信息
+ + 它们是更大注解机制的一部分，在支持注解的框架中具有一致性
+- (4). 适用场合
+ + 如果标记是应用在任何程序元素而非类或者接口，那么应该使用注解。
+ + 如果标记永远只用于限制特殊元素的接口，那么应该使用标记接口。
