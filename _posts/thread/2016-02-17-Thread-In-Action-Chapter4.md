@@ -12,7 +12,7 @@ comments: true
 
 本文讲述内容的完整代码实例见 <https://github.com/sunailian/TouchHigh>。
 
-##一、有助于提高“锁”性能的几点建议
+##4.1、有助于提高“锁”性能的几点建议
 
 ###1、减少锁持有时间
 
@@ -170,3 +170,224 @@ public void put(E e) throws InterruptedException {
 }
 
 ```
+
+###5、锁粗化
+
+虽然我们会要求每个线程持有锁的时间尽可能短，但如果对同一个锁不停的请求、同步和释放，本身也是非常耗费性能的事情。
+
+因此，虚拟机在遇到一连串连续地对同一锁不断进行请求和释放的操作时，便会把所有的锁操作整合成对锁的一次请求，从而减少对锁的请求同步次数。这个就叫做**锁粗化**
+
+```Java
+public void  demoMethod(){
+	synchronized(lock){
+		// do sth
+	}
+
+//做其他不需要的同步的工作，但是很快能执行完毕
+	synchronized(lock){
+		//do sth
+	}
+}
+
+```
+上述代码可以整合成：
+
+```Java
+public void  demoMethod(){
+  //整合成一次锁请求
+	synchronized(lock){
+		//do sth
+		//做其他不需要的同步的工作，但是很快能执行完毕
+	}
+}
+
+```
+
+尤其当在循环内请求锁时，合理进行**锁粗化**
+
+```Java
+for (int i = 0;i<CIRCLE ;i++ ) {
+	synchronized(lock){
+
+	}
+}
+```
+
+修改成：
+
+```Java
+synchronized(lock){
+	for (int i = 0;i<CIRCLE ;i++ ) {
+
+	}
+}
+
+```
+
+##4.2 Java虚拟机对锁优化所做的努力
+
+JDK对锁的优化策略：
+
+###1、锁偏向
+
+- (1). 核心思想：如果一个线程获得了锁，那么锁就进入偏向模式。当这个线程再次请求锁时，无须再做任何同步操作。
+
+- (2). 对于几乎没有锁竞争的场合，比较有效果，因为多次请求极有可能是同一个线程
+
+- (3). 对于锁竞争激烈的场合，效果不佳。
+
+- (4). 可以使用-XX:+UseBiasedLocking开启偏向锁。
+
+##2、轻量级锁
+
+##3、自旋锁
+
+##4、锁消除
+
+
+##4.3 人手一支笔：ThreadLocal
+
+如果说使用锁是第一种思路，那么**ThreadLocal**就是第二种思路了。
+
+###1、ThreadLocal简单使用
+
+以下是简单的示例：
+
+```Java
+private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+public static class ParseDate implements Runnable{
+	int i = 0;
+	public ParseDate(int i){this.i = i;}
+
+	public void run(){
+		try{
+			Date t = sdf.parse("2015-03-29 13:20:"+i%60);
+			System.out.println(i + ":" + t);
+		}catch(ParseException e){
+			e.printStackTrace();
+		}
+	}
+}
+
+public static void main(String[] args){
+	ExecutorService es = Executors.newFixedThreadPool(10);
+	for(int i = 0;i<1000;i++){
+		ex.execute(new ParseDate(i))
+	}
+}
+
+```
+
+上述代码可能会抛出异常，因为SimpleDateFormat是**非线程安全**的。
+
+我们可以在`sdf.parse()`方法前加锁。当然也可以使用ThreadLocal：
+
+```Java
+static ThreadLocal<SimpleDateFormat> tl = new ThreadLocal<SimpleDateFormat>();
+public static class ParseDate implements Runnable{
+	int i = 0;
+	public ParseDate(int i){this.i = i;}
+
+	public void run(){
+		try{
+			if(tl.get()==null){
+				tl.set(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"));//手工去设置不同的对象实例保证线程安全
+			}
+			Date t = tl.get().parse("2015-03-29 13:20:"+i%60);
+
+		}catch(ParseException e){
+			e.printStackTrace();
+		}
+	}
+}
+
+
+```
+
+**注意：为每一个线程分配不同的对象，需要在应用层面保证。ThreadLocal只是起到了简单的容器作用。**
+
+###2、ThreadLocal实现原理
+
+主要关注ThreadLocal的`set()`和`get()`方法
+
+方法源码：
+
+```Java
+public void set(T value) {
+		Thread t = Thread.currentThread();
+		ThreadLocalMap map = getMap(t);  //可以理解为类似HashMap，虽然不是Map。定义在ThreadLocal内部，每个Thread持有ThreadLocal.ThreadLocalMap
+		if (map != null)
+				map.set(this, value);
+		else
+				createMap(t, value);
+}
+
+public T get() {
+		Thread t = Thread.currentThread();
+		ThreadLocalMap map = getMap(t);
+		if (map != null) {
+				ThreadLocalMap.Entry e = map.getEntry(this);
+				if (e != null)
+						return (T)e.value;
+		}
+		return setInitialValue();
+}
+```
+
+可以发现，**由于变量都是维护在ThreadLocal内部的（ThreadLocalMap），这也意味着只要线程不退出，对象的引用将一直存在。**
+
+ 当线程退出时，Thread类会进行一些清理工作，其中就包括清理ThreadLocalMap：
+
+ ```Java
+ /**
+  * This method is called by the system to give a Thread
+  * a chance to clean up before it actually exits.
+  */
+ private void exit() {
+ 		if (group != null) {
+ 				group.threadTerminated(this);
+ 				group = null;
+ 		}
+ 		/* Aggressively null out all reference fields: see bug 4006245 */
+ 		target = null;
+ 		/* Speed the release of some of these resources */
+		//注意以下部分：
+ 		threadLocals = null;
+ 		inheritableThreadLocals = null;
+ 		inheritedAccessControlContext = null;
+ 		blocker = null;
+ 		uncaughtExceptionHandler = null;
+ }
+ ```
+
+ 如果使用线程池，那么当前线程未必回退出（比如固定大小的线程池，线程总是存在）。**如果这样，将一些大的对象设置到ThreadLocal中（它实际保存在线程池有的threadLocals Map内），可能会使系统内出现内存泄漏的可能（如果设置了对象到ThreadLocal中，但是不清理它，在你使用几次后，这个对象再也不使用了，但是它却无法被回收）**
+
+ 如果希望及时回收对象，最好使用ThreadLocal.remove()方法移除变量。
+
+ 另外，JDK也可能允许你使用类似obj=null之类的代码去加速垃圾回收。即手工将ThreadLocal变量设置为null，这么做有用的原因是：因为ThreadLocalMap其实更加类似**WeakHashMap**。
+
+虚拟机在垃圾回收时，如果发现是弱引用，就会立即回收。
+
+ThreadLocal内部是由一系列的Entry构成，每一个Entry都是WeakReference<ThreadLocal>
+
+```Java
+/**
+				* The entries in this hash map extend WeakReference, using
+				* its main ref field as the key (which is always a
+				* ThreadLocal object).  Note that null keys (i.e. entry.get()
+				* == null) mean that the key is no longer referenced, so the
+				* entry can be expunged from table.  Such entries are referred to
+				* as "stale entries" in the code that follows.
+				*/
+			 static class Entry extends WeakReference<ThreadLocal> {
+					 /** The value associated with this ThreadLocal. */
+					 Object value;
+
+					 Entry(ThreadLocal k, Object v) {
+							 super(k);
+							 value = v;
+					 }
+			 }
+```
+
+这里虽然使用了ThreadLocal作为Map的key，但是实际上，它并未真正的持有ThreadLocal的引用。而当ThreadLocal的外部强引用被回收时，ThreadLocalMap中的key就会变成null。
