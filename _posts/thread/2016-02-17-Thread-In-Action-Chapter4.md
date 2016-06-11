@@ -462,8 +462,8 @@ public final int incrementAndGet() {
  ###3、Java中的指针：Unsafe类
 
  看下incrementAndGet方法中的**compareAndSet方法**的源码：
- 
- ```Java
+
+```Java
 public final boolean compareAndSet(int expect,int update){
 	return unsafe.compareAndSwapInt(this,valueOffset,expect,update);
 }
