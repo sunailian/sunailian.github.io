@@ -459,7 +459,7 @@ public final int incrementAndGet() {
 
 这里使用了**for死循环**，也就是说当**compareAndSet比较失败时，说明有其它线程更改了值，则再次进入循环重试，直到成功。**
 
- ###3、Java中的指针：Unsafe类
+###3、Java中的指针：Unsafe类
 
  看下incrementAndGet方法中的**compareAndSet方法**的源码：
 
@@ -472,4 +472,4 @@ public final boolean compareAndSet(int expect,int update){
  Unsafe封装了一些类似指针的操作。它是一个JDK内部使用的专属类。我们自己的应用程序无法直接调用。
 
 
- ###4、无锁的对象引用：AtomicReference
+###4、无锁的对象引用：AtomicReference
