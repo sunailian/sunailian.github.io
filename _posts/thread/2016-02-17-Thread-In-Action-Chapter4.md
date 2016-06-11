@@ -360,15 +360,15 @@ public T get() {
  }
  ```
 
- 如果使用线程池，那么当前线程未必回退出（比如固定大小的线程池，线程总是存在）。**如果这样，将一些大的对象设置到ThreadLocal中（它实际保存在线程池有的threadLocals Map内），可能会使系统内出现内存泄漏的可能（如果设置了对象到ThreadLocal中，但是不清理它，在你使用几次后，这个对象再也不使用了，但是它却无法被回收）**
+ - 如果使用线程池，那么当前线程未必回退出（比如固定大小的线程池，线程总是存在）。**如果这样，将一些大的对象设置到ThreadLocal中（它实际保存在线程池有的threadLocals Map内），可能会使系统内出现内存泄漏的可能（如果设置了对象到ThreadLocal中，但是不清理它，在你使用几次后，这个对象再也不使用了，但是它却无法被回收）**
 
- 如果希望及时回收对象，最好使用ThreadLocal.remove()方法移除变量。
+ - 如果希望及时回收对象，最好使用ThreadLocal.remove()方法移除变量。
 
- 另外，JDK也可能允许你使用类似obj=null之类的代码去加速垃圾回收。即手工将ThreadLocal变量设置为null，这么做有用的原因是：因为ThreadLocalMap其实更加类似**WeakHashMap**。
+ - 另外，JDK也可能允许你使用类似obj=null之类的代码去加速垃圾回收。即手工将ThreadLocal变量设置为null，这么做有用的原因是：因为ThreadLocalMap其实更加类似**WeakHashMap**。
 
-虚拟机在垃圾回收时，如果发现是弱引用，就会立即回收。
+- 虚拟机在垃圾回收时，如果发现是弱引用，就会立即回收。
 
-ThreadLocal内部是由一系列的Entry构成，每一个Entry都是WeakReference<ThreadLocal>
+- ThreadLocal内部是由一系列的Entry构成，每一个Entry都是WeakReference<ThreadLocal>
 
 ```Java
 /**
@@ -390,4 +390,4 @@ ThreadLocal内部是由一系列的Entry构成，每一个Entry都是WeakReferen
 			 }
 ```
 
-这里虽然使用了ThreadLocal作为Map的key，但是实际上，它并未真正的持有ThreadLocal的引用。而当ThreadLocal的外部强引用被回收时，ThreadLocalMap中的key就会变成null。
+这里虽然使用了ThreadLocal作为Map的key，但是实际上，**它并未真正的持有ThreadLocal的引用。而当ThreadLocal的外部强引用被回收时，ThreadLocalMap中的key就会变成null**。
