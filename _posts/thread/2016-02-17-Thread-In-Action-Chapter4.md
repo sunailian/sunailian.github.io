@@ -449,7 +449,7 @@ private static final long valueOffset; //保存value字段在AtomicInteger对象
  * @return the updated value
  */
 public final int incrementAndGet() {
-		for (;;) {
+		for (;;) {            //使用了for循环
 				int current = get();
 				int next = current + 1;
 				if (compareAndSet(current, next))
