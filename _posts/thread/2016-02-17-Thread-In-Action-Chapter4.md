@@ -467,7 +467,7 @@ public final int incrementAndGet() {
 public final boolean compareAndSet(int expect,int update){
 	return unsafe.compareAndSwapInt(this,valueOffset,expect,update);
 }
- ```
+```
 
  Unsafe封装了一些类似指针的操作。它是一个JDK内部使用的专属类。我们自己的应用程序无法直接调用。
 
