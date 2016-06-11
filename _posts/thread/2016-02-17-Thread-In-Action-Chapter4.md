@@ -391,3 +391,84 @@ public T get() {
 ```
 
 这里虽然使用了ThreadLocal作为Map的key，但是实际上，**它并未真正的持有ThreadLocal的引用。而当ThreadLocal的外部强引用被回收时，ThreadLocalMap中的key就会变成null**。
+
+##4.4 无锁
+
+###1、与众不同的并发策略：比较交换（CAS）
+
+**CAS(V,E,N)**
+
+- V：要更新的变量
+- E：预期值
+- N：新的值
+
+当V==E：将V的值设置为N。否则说明有其他线程更新了该值，当前线程不做任何处理。
+
+###2、无锁的线程安全整数：AtomicInteger
+
+AtomicInteger是可见的且线程安全的。
+
+```Java
+public final int	get()                       //取得当前值
+public final int	getAndAdd(int delta)       //当前值加delta，返回旧值
+public final int	addAndGet(int delta)       //当前值加delta，返回新值
+public final int	getAndIncrement()          //当前值加1，返回旧值
+public final int	getAndDecrement()          //当前值减1，返回旧值
+public final int	incrementAndGet()          //当前值加1，返回新值
+public final int	decrementAndGet()           //当前值减1，返回新值
+public final int	getAndSet(int newValue)    //设置新值，并返回旧值
+public final void	set(int newValue)           //设置当前值
+public final boolean	compareAndSet(int expect, int update) //如果当前值为expect，则设置为update
+public final void	lazySet(int newValue)
+public final boolean	weakCompareAndSet(int expect, int update)
+public final int	intValue()            
+public final double	doubleValue()
+public final float	floatValue()   
+public final long	longValue()
+public final String	toString()
+```
+
+就内部实现上来说，AtomicInteger中保存着一个核心字段：
+
+```Java
+private volatile int value;   //代表AtomicInteger当前实际值
+```
+
+以及还有一个：
+
+```Java
+private static final long valueOffset; //保存value字段在AtomicInteger对象中的偏移量
+```
+
+以下分析下incrementAndGet的源码：
+```Java
+/**
+ * Atomically increments by one the current value.
+ *
+ * @return the updated value
+ */
+public final int incrementAndGet() {
+		for (;;) {
+				int current = get();
+				int next = current + 1;
+				if (compareAndSet(current, next))
+						return next;
+		}
+}
+```
+
+这里使用了**for死循环**，也就是说当**compareAndSet比较失败时，说明有其它线程更改了值，则再次进入循环重试，直到成功。**
+
+ ###3、Java中的指针：Unsafe类
+
+ 看下incrementAndGet方法中的**compareAndSet方法**的源码：
+ ```Java
+public final boolean compareAndSet(int expect,int update){
+	return unsafe.compareAndSwapInt(this,valueOffset,expect,update);
+}
+ ```
+
+ Unsafe封装了一些类似指针的操作。它是一个JDK内部使用的专属类。我们自己的应用程序无法直接调用。
+
+
+ ###4、无锁的对象引用：AtomicReference
