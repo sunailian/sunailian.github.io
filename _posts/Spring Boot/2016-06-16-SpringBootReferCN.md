@@ -11,6 +11,8 @@ comments: true
 ##第二章 开始第一个SpringBoot工程
   这一章非常适合正在开始学习Spring Boot或者Spring的用户。这一章里会解答一些基础的“是什么？”、“怎么做？”以及“为什么？”之类的问题。你可以在安装的过程中对SpringBoot有一个总体的了解。然后我们会创建我们第一个Spring Boot项目，同时随着慢慢的深入，我们也会去讨论一些核心的机制和准则。
 
+---
+
 ###1.Spring Boot介绍
   SpringBoot指导手册提供html、pdf和epub版本。用户可在docs.spring.io/spring-boot/docs/current/reference上下载最新的版本。
 
@@ -80,6 +82,7 @@ comments: true
 Spring Boot CLI是一个命令行工具。
 
 **Mac下安装：**
+
 ```
 $ brew tap pivotal/tap
 $ brew install springboot
@@ -98,7 +101,9 @@ $ brew install springboot
 </dependencies>
 
 ```
+
 - 3. 创建代码：
+
 ```Java
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
@@ -123,9 +128,11 @@ public class Example {
 ```
 
 **EnableAutoConfiguration**：开启springboot自动配置。
+
 **SpringApplication**:main方法中的SpringApplication会启动整个应用；
 
 - 4. 生成可执行的jar
+
 可执行的jar包（也叫“胖jar”）需要在pom文件中添加`spring-boot-maven-plugin` 。
 
 ```xml
@@ -141,6 +148,7 @@ public class Example {
 ```
 
 执行`mvn package`可以打包jar。使用命令运行jar包：
+
 ```
 $ jar tvf target/myproject-0.0.1-SNAPSHOT.jar
 ```
