@@ -92,6 +92,7 @@ $ brew install springboot
 
 - 1. 创建pom文件：参看上面；
 - 2. 添加依赖：
+
 ```xml
 <dependencies>
   <dependency>
