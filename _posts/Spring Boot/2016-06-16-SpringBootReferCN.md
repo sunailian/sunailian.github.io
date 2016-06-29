@@ -16,7 +16,7 @@ comments: true
   这一章非常适合正在开始学习Spring Boot或者Spring的用户。这一章里会解答一些基础的“是什么？”、“怎么做？”以及“为什么？”之类的问题。你可以在安装的过程中对SpringBoot有一个总体的了解。然后我们会创建我们第一个Spring Boot项目，同时随着慢慢的深入，我们也会去讨论一些核心的机制和准则。
 
 ###1.Spring Boot介绍
-  SpringBoot指导手册提供html、pdf和epub版本。用户可在docs.spring.io/spring-boot/docs/current/reference上下载最新的版本。
+  SpringBoot指导手册提供html、pdf和epub版本。用户可在[docs.spring.io/spring-boot/docs/current/reference]上下载最新的版本。
 
 ###2.Maven支持
 
