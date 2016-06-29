@@ -105,6 +105,7 @@ $ brew install springboot
 - 3. 创建代码：
 
 ```Java
+
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 import org.springframework.stereotype.*;
@@ -148,6 +149,7 @@ public class Example {
 ```
 
 执行`mvn package`可以打包jar。使用命令运行jar包：
+
 
 ```
 $ jar tvf target/myproject-0.0.1-SNAPSHOT.jar
