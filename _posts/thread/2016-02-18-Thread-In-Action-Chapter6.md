@@ -17,6 +17,7 @@ comments: true
 ###6.1.1 函数作为一等公民
 
 jQuery中的函数案例：
+
 ```
 function f1(){
 	var n = 1;
@@ -108,6 +109,19 @@ public interface IHorse{
 	void eat();
 	default void run(){
 		System.out.println("horse run");
+	}
+}
+
+```
+
+比如在`java.util.Comparator`中，Java8就增加了若干个默认方法，用于多个比较器的整合，其中有一个常用的默认方法：
+
+```Java
+default Comparator<T> thenComparing(Comparator<? super T> other){
+	Objects.requireNonNull(other);
+	return (Comparator<T> & Serializable)(c1,c2) -> {
+		int res = compare(c1,c2);
+		return (res!=0) ? res :other.compare(c1,c2);
 	}
 }
 
