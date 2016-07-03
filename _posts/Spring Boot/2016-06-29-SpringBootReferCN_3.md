@@ -26,7 +26,7 @@ comments: true
 
 ```
 
-可以自己覆盖默认的version。比如去修改Spring Data的版本：
+可以自己去覆盖默认的version。比如去修改Spring Data的版本：
 
 ```xml
 <properties>
@@ -103,3 +103,72 @@ Spring Boot包含了Maven plugin，使得项目可以打包成可执行的jar。
 </build>
 
 ```
+
+###5.不推荐使用的default package
+Spring Boot不推荐使用`default package`，因为这会导致使用注解出现问题，比如在使用**@ComponentScan**、**@EntityScan**或者 **@SpringBootApplication**。
+
+###6.创建main application类
+
+建议将main application类放到程序的**根目录**下。一般main application类都会需要**@EnableAutoConfiguration**注解。
+
+典型的main application结构：
+
+```
+com
+ +- example
+     +- myproject
+         +- Application.java
+         |
+         +- domain
+         |   +- Customer.java
+         |   +- CustomerRepository.java
+         |
+         +- service
+         |   +- CustomerService.java
+         |
+         +- web
+             +- CustomerController.java
+```
+
+Application.java类如下：
+
+```java
+@Configuration
+@EnableAutoConfiguration
+@ComponentScan
+public class Application {
+
+
+    public static void main(String[] args){
+        SpringApplication.run(Application.class,args);
+    }
+}
+
+```
+
+###7.Auto-configuration自动配置
+Auto-configuration会尝试在依赖的jar包的基础上自动去配置应用。比如你的classpath上有HSQLDB，那么你不需要手工去配置任何的数据库连接bean，springboot会自动配置一个内存数据库。
+
+你可以在拥有**@Configuration**注解的类上面使用**@EnableAutoConfiguration**或者**@SpringBootApplication**注解去完成自动配置。
+
+> 你只需要配置一个**@EnableAutoConfiguration**注解就可以。一般推荐你加在第一个拥有**@Configuration**注解的类上面。
+
+####7.1 逐渐替代Auto-configuration
+Auto-configuration是非侵入式的，你可以在任何地方定义你自己的configuration去替换Auto-configuration里某些具体的配置。
+
+如果你想看目前正在用到哪些配置，你可以使用`--debug`来查看。
+
+####7.2 禁用某个Auto-configuration
+
+如果想禁用某个配置，可以使用`exclude`属性去禁用：
+
+```java
+@Configuration
+@EnableAutoConfiguration(exclude={DataSourceAutoConfiguration.class})
+public class MyConfiguration {
+
+}
+
+```
+
+如果该类不在classpath上，可以使用`excludeName`
