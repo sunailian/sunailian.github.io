@@ -71,6 +71,7 @@ public static void declarative(){
 ###6.1.4 不变的对象
 
 函数式编程中，几乎所有传递的对象都不会轻易被修改。
+
 ```Java
 static int[] iArr = {1,2,3,4,5,6,7,8,9};
 Arrays.stream(iArr).map((x)->x=x+1).forEach(System.out:println);
