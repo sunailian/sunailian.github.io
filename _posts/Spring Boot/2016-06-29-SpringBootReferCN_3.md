@@ -147,20 +147,21 @@ public class Application {
 ```
 
 ###7.Auto-configuration自动配置
-Auto-configuration会尝试在依赖的jar包的基础上自动去配置应用。比如你的classpath上有HSQLDB，那么你不需要手工去配置任何的数据库连接bean，springboot会自动配置一个内存数据库。
+SpringBoot自动配置（auto-configuration）尝试根据你添加的jar依赖自动配置你的Spring应用。例如，如果你的classpath下存在HSQLDB，并且你没有手动配置任何数据库连接beans，那么我们将自动配置一个内存型（in-memory）数据库。
 
-你可以在拥有**@Configuration**注解的类上面使用**@EnableAutoConfiguration**或者**@SpringBootApplication**注解去完成自动配置。
+你可以通过将@EnableAutoConfiguration或@SpringBootApplication注解添加到一个@Configuration类上来选择自动配置。
 
-> 你只需要配置一个**@EnableAutoConfiguration**注解就可以。一般推荐你加在第一个拥有**@Configuration**注解的类上面。
+>注：你只需要添加一个**@EnableAutoConfiguration**注解。我们建议你将它添加到**主@Configuration**类上。
+
 
 ####7.1 逐渐替代Auto-configuration
-Auto-configuration是非侵入式的，你可以在任何地方定义你自己的configuration去替换Auto-configuration里某些具体的配置。
+自动配置是非侵占性的，任何时候你都可以定义自己的配置类来替换自动配置的特定部分。例如，如果你添加自己的DataSourcebean，默认的内嵌数据库支持将不被考虑。
 
-如果你想看目前正在用到哪些配置，你可以使用`--debug`来查看。
+如果需要找出当前应用了哪些自动配置及应用的原因，你可以使用`--debug`开关启动应用。这将会记录一个自动配置的报告并输出到控制台。
 
 ####7.2 禁用某个Auto-configuration
 
-如果想禁用某个配置，可以使用`exclude`属性去禁用：
+如果发现应用了你不想要的特定自动配置类，你可以使用`@EnableAutoConfiguration`注解的**排除属性**来禁用它们。
 
 ```java
 @Configuration
@@ -171,4 +172,116 @@ public class MyConfiguration {
 
 ```
 
-如果该类不在classpath上，可以使用`excludeName`
+###8 SpringBeans和依赖注入
+
+你可以自由地使用任何标准的Spring框架技术去定义beans和它们注入的依赖。简单起见，我们经常使用**@ComponentScan**注解搜索beans，并结合@Autowired构造器注入。
+
+如果使用上面建议的结构组织代码（将应用类放到根包下），你可以添加@ComponentScan注解而不需要任何参数。你的所有应用程序组件（**@Component,@Service,@Repository,@Controller**等）将被自动注册为SpringBeans。
+
+下面是一个**@ServiceBean**的示例，它使用构建器注入获取一个需要的RiskAssessorbean。
+
+```java
+packagecom.example.service;
+importorg.springframework.beans.factory.annotation.Autowired;
+importorg.springframework.stereotype.Service;
+@Service
+public class DatabaseAccountService implements AccountService{
+
+  private final RiskAssessor riskAssessor;
+
+  @Autowired
+  public DatabaseAccountService(RiskAssessor riskAssessor){
+    this.riskAssessor = riskAssessor;
+  }
+  //...
+}
+
+```
+
+> **注：注意如何使用构建器注入来允许riskAssessor字段被标记为final，这意味着riskAssessor后续是不能改变的。**
+
+###9 使用@SpringBootApplication注解
+
+很多SpringBoot开发者总是使用`@Configuration，@EnableAutoConfiguration`和`@ComponentScan`注解他们的main类。由于这些注解被如此频繁地一块使用（特别是你遵循以上最佳实践时），SpringBoot提供一个方便的`@SpringBootApplication`选择。
+
+该`@SpringBootApplication`注解等价于以默认属性使用`@Configuration，@EnableAutoConfiguration和@ComponentScan`。
+
+```java
+packagecom.example.myproject;
+importorg.springframework.boot.SpringApplication;
+importorg.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication//same as @Configuration @EnableAutoConfiguration @ComponentScan
+public class Application{
+
+  public static void main(String[]args){
+    SpringApplication.run(Application.class,args);
+  }
+}
+
+```
+
+###10 运行应用程序
+
+将应用打包成jar并使用一个内嵌HTTP服务器的一个最大好处是，你可以像其他方式那样运行你的应用程序。调试SpringBoot应用也很简单；你不需要任何特殊IDE或扩展。
+
+>**注：本章节只覆盖基于jar的打包，如果选择将应用打包成war文件，你最好参考一下服务器和IDE文档。**
+
+####10.1 作为一个打包后的应用运行
+
+如果使用SpringBootMaven或Gradle插件创建一个可执行jar，你可以使用java-jar运行你的应用。例如：
+
+```
+$java -jar target/myproject-0.0.1-SNAPSHOT.jar
+```
+
+运行一个打包的程序并开启**远程调试支持**是可能的，这允许你将调试器附加到打包的应用程序上：
+
+```
+$java -Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=8000,suspend=n\-jartarget/myproject-0.0.1-SNAPSHOT.jar
+```
+
+###10.2 使用Maven插件运行
+
+SpringBootMaven插件包含一个run目标，它可以用来快速编译和运行应用程序。应用程序以一种暴露的方式运行，由于即时"热"加载，你可以编辑资源。
+
+```
+$mvn spring-boot:run
+```
+你可能想使用有用的操作系统环境变量：
+
+```
+$export MAVEN_OPTS=-Xmx1024m -XX:MaxPermSize=128M -Djava.security.egd=file:/dev/./urandom
+```
+("egd"设置是通过为Tomcat提供一个更快的会话keys熵源来加速Tomcat的。)
+
+
+###11 打包用于生产的应用程序
+
+可执行jars可用于生产部署。由于它们是自包含的，非常适合基于云的部署。关于其他“生产准备”的特性，比如健康监控，审计和指标REST，或JMX端点，可以考虑添加`spring-boot-actuator`。具体参考PartV,“SpringBootActuator:Production-readyfeatures”。
+
+###12 SpringApplication
+
+SpringApplication类提供了一种从main()方法启动Spring应用的便捷方式。在很多情况下，你只需委托给SpringApplication.run这个静态方法：
+
+```java
+public static void main(String[]args){
+  SpringApplication.run(MySpringConfiguration.class,args);
+}
+
+```
+
+当应用启动时，默认情况下会显示INFO级别的日志信息，包括一些相关的启动详情，比如启动应用的用户等。
+
+####12.1 自定义Banner
+
+通过在classpath下添加一个banner.txt或设置banner.location来指定相应的文件可以改变启动过程中打印的banner。如果这个文件有特殊的编码，你可以使用banner.encoding设置它（默认为UTF-8）。
+
+在banner.txt中可以使用如下的变量：
+
+变量    |    描述
+--------| -----:|
+${application.version}  |   MANIFEST.MF中声明的应用版本号，例如1.0
+${application.formatted-version} |    MANIFEST.MF中声明的被格式化后的应用版本号（被括号包裹且以v作为前缀），用于显示，例如(v1.0)
+${spring-boot.version}     |   正在使用的SpringBoot版本号，例如1.2.2.BUILD-SNAPSHOT
+${spring-boot.formatted-version}  |   正在使用的SpringBoot被格式化后的版本号（被括号包裹且以v作为前缀）,用于显示，例如(v1.2.2.BUILD-SNAPSHOT)
