@@ -172,7 +172,7 @@ public class MyConfiguration {
 
 ```
 
-###8 SpringBeans和依赖注入
+###8.SpringBeans和依赖注入
 
 你可以自由地使用任何标准的Spring框架技术去定义beans和它们注入的依赖。简单起见，我们经常使用**@ComponentScan**注解搜索beans，并结合@Autowired构造器注入。
 
@@ -200,7 +200,7 @@ public class DatabaseAccountService implements AccountService{
 
 > **注：注意如何使用构建器注入来允许riskAssessor字段被标记为final，这意味着riskAssessor后续是不能改变的。**
 
-###9 使用@SpringBootApplication注解
+###9.使用@SpringBootApplication注解
 
 很多SpringBoot开发者总是使用`@Configuration，@EnableAutoConfiguration`和`@ComponentScan`注解他们的main类。由于这些注解被如此频繁地一块使用（特别是你遵循以上最佳实践时），SpringBoot提供一个方便的`@SpringBootApplication`选择。
 
@@ -221,7 +221,7 @@ public class Application{
 
 ```
 
-###10 运行应用程序
+###10.运行应用程序
 
 将应用打包成jar并使用一个内嵌HTTP服务器的一个最大好处是，你可以像其他方式那样运行你的应用程序。调试SpringBoot应用也很简单；你不需要任何特殊IDE或扩展。
 
@@ -256,11 +256,11 @@ $export MAVEN_OPTS=-Xmx1024m -XX:MaxPermSize=128M -Djava.security.egd=file:/dev/
 ("egd"设置是通过为Tomcat提供一个更快的会话keys熵源来加速Tomcat的。)
 
 
-###11 打包用于生产的应用程序
+###11.打包用于生产的应用程序
 
 可执行jars可用于生产部署。由于它们是自包含的，非常适合基于云的部署。关于其他“生产准备”的特性，比如健康监控，审计和指标REST，或JMX端点，可以考虑添加`spring-boot-actuator`。具体参考PartV,“SpringBootActuator:Production-readyfeatures”。
 
-###12 SpringApplication
+###12.SpringApplication
 
 SpringApplication类提供了一种从main()方法启动Spring应用的便捷方式。在很多情况下，你只需委托给SpringApplication.run这个静态方法：
 
@@ -281,7 +281,102 @@ public static void main(String[]args){
 
 变量    |    描述
 --------| -----:|
-${application.version}  |   MANIFEST.MF中声明的应用版本号，例如1.0
-${application.formatted-version} |    MANIFEST.MF中声明的被格式化后的应用版本号（被括号包裹且以v作为前缀），用于显示，例如(v1.0)
-${spring-boot.version}     |   正在使用的SpringBoot版本号，例如1.2.2.BUILD-SNAPSHOT
-${spring-boot.formatted-version}  |   正在使用的SpringBoot被格式化后的版本号（被括号包裹且以v作为前缀）,用于显示，例如(v1.2.2.BUILD-SNAPSHOT)
+${application.version}  |MANIFEST.MF中声明的应用版本号，例如1.0
+${application.formatted-version} |MANIFEST.MF中声明的被格式化后的应用版本号（被括号包裹且以v作为前缀），用于显示，例如(v1.0)
+${spring-boot.version}     |正在使用的SpringBoot版本号，例如1.2.2.BUILD-SNAPSHOT
+${spring-boot.formatted-version}  |正在使用的SpringBoot被格式化后的版本号（被括号包裹且以v作为前缀）,用于显示，例如(v1.2.2.BUILD-SNAPSHOT)
+
+>注：如果想以编程的方式产生一个banner，可以使用 **SpringBootApplication.setBanner(...)** 方法。使用`org.springframework.boot.Banner`接口，实现你自己的printBanner()方法
+
+####12.2 自定义SpringApplication
+
+如果默认的SpringApplication不符合你的口味，你可以创建一个本地的实例并自定义它。例如，关闭banner你可以这样写：
+
+```java
+public static void main(String[]args){
+  SpringApplication app= new SpringApplication(MySpringConfiguration.class);
+  app.setShowBanner(false);
+  app.run(args);
+}
+```
+
+>注：传递给SpringApplication的构造器参数是springbeans的配置源。在大多数情况下，这些将是@Configuration类的引用，但它们也可能是XML配置或要扫描包的引用。
+你也可以使用application.properties文件来配置SpringApplication。具体参考Externalized配置。查看配置选项的完整列表，可参考SpringApplicationJavadoc.
+
+####12.3 流畅的构建API
+
+如果你需要创建一个分层的ApplicationContext（多个具有父子关系的上下文），或你只是喜欢使用流畅的构建API，你可以使用SpringApplicationBuilder。SpringApplicationBuilder允许你以链式方式调用多个方法，包括可以创建层次结构的parent和child方法。
+
+```java
+new SpringApplicationBuilder().showBanner(false)
+                              .sources(Parent.class)
+                              .child(Application.class)
+                              .run(args);
+```
+
+>注：创建ApplicationContext层次时有些限制，比如，Web组件(components)必须包含在子上下文(childcontext)中，且相同的Environment即用于父上下文也用于子上下文中。具体参考SpringApplicationBuilderjavadoc22.3.流畅的构建APISpringBoot参考指南8122.3.流畅的构建API
+
+####12.4 Application事件和监听器
+
+除了常见的Spring框架事件，比如`ContextRefreshedEvent`，一个SpringApplication也发送一些额外的应用事件。一些事件实际上是在ApplicationContext被创建前触发的。
+
+你可以使用多种方式注册事件监听器，最普通的是使用`SpringApplication.addListeners(...)`方法。
+
+在你的应用运行时，应用事件会以下面的次序发送：
+
+- 1.在运行开始，但除了监听器注册和初始化以外的任何处理之前，会发送一个ApplicationStartedEvent。
+- 2.在Environment将被用于已知的上下文，但在上下文被创建前，会发送一个ApplicationEnvironmentPreparedEvent。
+- 3.在refresh开始前，但在bean定义已被加载后，会发送一个ApplicationPreparedEvent。
+- 4.启动过程中如果出现异常，会发送一个ApplicationFailedEvent。
+
+>注：你通常不需要使用应用程序事件，但知道它们的存在会很方便（在某些场合可能会使用到）。在Spring内部，SpringBoot使用事件处理各种各样的任务。
+
+####12.5 Web环境
+
+一个SpringApplication将尝试为你创建正确类型的ApplicationContext。在默认情况下，使用AnnotationConfigApplicationContext或AnnotationConfigEmbeddedWebApplicationContext取决于你正在开发的是否是web应用。
+
+用于确定一个web环境的算法相当简单（基于是否存在某些类）。如果需要覆盖默认行为，你可以使用setWebEnvironment(booleanwebEnvironment)。通过调用setApplicationContextClass(...)，你可以完全控制ApplicationContext的类型。
+
+>注：当JUnit测试里使用SpringApplication时，调用setWebEnvironment(false)是可取的。
+
+####12.5 命令行启动器
+
+如果你想获取原始的命令行参数，或一旦SpringApplication启动，你需要运行一些特定的代码，你可以实现CommandLineRunner接口。在所有实现该接口的Springbeans上将调用run(String...args)方法。
+
+```java
+import org.springframework.boot.*;
+import org.springframework.stereotype.*;
+
+@Component
+public class MyBean implements CommandLineRunner{
+  public void run(String...args){
+    //Dosomething...
+  }
+}
+```
+
+如果一些CommandLineRunnerbeans被定义必须以特定的次序调用，你可以额外实现org.springframework.core.Ordered接口或使用org.springframework.core.annotation.Order注解。
+
+####12.6 Application退出
+
+每个SpringApplication在退出时为了确保ApplicationContext被优雅的关闭，将会注册一个JVM的shutdown钩子。所有标准的Spring生命周期回调（比如，DisposableBean接口或@PreDestroy注解）都能使用。
+
+此外，如果beans想在应用结束时返回一个特定的退出码（exitcode），可以实现org.springframework.boot.ExitCodeGenerator接口。
+
+####12.7 外化配置
+
+SpringBoot允许外化（externalize）你的配置，这样你能够在不同的环境下使用相同的代码。你可以使用properties文件，YAML文件，环境变量和命令行参数来外化配置。使用`@Value`注解，可以直接将属性值注入到你的beans中，并通过Spring的Environment抽象或绑定到结构化对象来访问。
+
+SpringBoot使用一个非常特别的PropertySource次序来允许对值进行合理的覆盖，需要以下面的次序考虑属性：
+
+- 1.命令行参数
+- 2.来自于java:comp/env的JNDI属性
+- 3.Java系统属性（System.getProperties()）
+- 4.操作系统环境变量
+- 5.只有在random.* 里包含的属性会产生一个RandomValuePropertySource
+- 6.在打包的jar外的应用程序配置文件（application.properties，包含YAML和profile变量）
+- 7.在打包的jar内的应用程序配置文件（application.properties，包含YAML和profile变量）
+- 8.在@Configuration类上的@PropertySource注解
+- 9.默认属性（使用SpringApplication.setDefaultProperties指定）
+
+下面是一个具体的示例（假设你开发一个使用name属性的@Component）：
