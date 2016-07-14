@@ -363,7 +363,7 @@ public class MyBean implements CommandLineRunner{
 
 此外，如果beans想在应用结束时返回一个特定的退出码（exitcode），可以实现org.springframework.boot.ExitCodeGenerator接口。
 
-####12.7 外化配置
+###13 外化配置
 
 SpringBoot允许外化（externalize）你的配置，这样你能够在不同的环境下使用相同的代码。你可以使用properties文件，YAML文件，环境变量和命令行参数来外化配置。使用`@Value`注解，可以直接将属性值注入到你的beans中，并通过Spring的Environment抽象或绑定到结构化对象来访问。
 
@@ -380,3 +380,290 @@ SpringBoot使用一个非常特别的PropertySource次序来允许对值进行�
 - 9.默认属性（使用SpringApplication.setDefaultProperties指定）
 
 下面是一个具体的示例（假设你开发一个使用name属性的@Component）：
+
+```Java
+import org.springframework.stereotype.*;
+import org.springframework.beans.factory.annotation.*;
+@Component
+public class MyBean{
+  @Value("${name}")
+  private String name;
+  //...
+}
+```
+
+你可以将一个application.properties文件捆绑到jar内，用来提供一个合理的默认name属性值。当运行在生产环境时，可以在jar外提供一个application.properties文件来覆盖name属性。对于一次性的测试，你可以使用特定的命令行开关启动（比如，java-jarapp.jar--name="Spring"）。
+
+####13.1 配置随机值
+
+RandomValuePropertySource在注入随机值（比如，密钥或测试用例）时很有用。它能产生整数，longs或字符串，比如：
+
+```Java
+my.secret=${random.value}
+my.number=${random.int}
+my.bignumber=${random.long}
+my.number.less.than.ten=${random.int(10)}
+my.number.in.range=${random.int[1024,65536]}
+```
+
+random.int*语法是OPENvalue(,max)CLOSE，此处OPEN，CLOSE可以是任何字符，并且value，max是整数。如果提供max，那么value是最小的值，max是最大的值（不包含在内）。
+
+####13.2 访问命令行属性
+
+默认情况下，SpringApplication将任何可选的命令行参数（以'--'开头，比如，--server.port=9000）转化为property，并将其添加到SpringEnvironment中。
+
+如上所述，命令行属性总是优先于其他属性源。如果你不想将命令行属性添加到Environment里，你可以使用SpringApplication.setAddCommandLineProperties(false)来禁止它们。
+
+####13.3 Application属性文件
+
+SpringApplication将从以下位置加载application.properties文件，并把它们添加到SpringEnvironment中：
+
+- 1.当前目录下的一个/config子目录
+- 2.当前目录
+- 3.一个classpath下的/config包
+- 4.classpath根路径（root）
+
+这个列表是按优先级排序的（列表中位置高的将覆盖位置低的）。
+
+> **注：你可以使用YAML（'.yml'）文件替代'.properties'。如果不喜欢将application.properties作为配置文件名，你可以通过指定spring.config.name环境属性来切换其他的名称。你也可以使用spring.config.location环境属性来引用一个明确的路径（目录位置或文件路径列表以逗号分割）。**
+
+```
+$java-jarmyproject.jar--spring.config.name=myproject
+//or
+$java-jarmyproject.jar--spring.config.location=classpath:/default.properties,classpath:/override.properties
+```
+
+如果spring.config.location包含目录（相对于文件），那它们应该以/结尾（在加载前，spring.config.name产生的名称将被追加到后面）。不管spring.config.location是什么值，默认的搜索路径classpath:,classpath:/config,file:,file:config/总会被使用。以这种方式，你可以在application.properties中为应用设置默认值，然后在运行的时候使用不同的文件覆盖它，同时保留默认配置。
+
+>**注：如果你使用环境变量而不是系统配置，大多数操作系统不允许以句号分割（period-separated）的key名称，但你可以使用下划线（underscores）代替（比如，使用SPRING_CONFIG_NAME代替spring.config.name）。如果你的应用运行在一个容器中，那么JNDI属性（java:comp/env）或servlet上下文初始化参数可以用来取代环境变量或系统属性，当然也可以使用环境变量或系统属性。**
+
+####13.4 特定的Profile属性
+
+除了application.properties文件，特定配置属性也能通过命令惯例application-{profile}.properties来定义。特定Profile属性从跟标准application.properties相同的路径加载，并且特定profile文件会覆盖默认的配置。
+
+####13.5 属性占位符
+
+当application.properties里的值被使用时，它们会被存在的Environment过滤，所以你能够引用先前定义的值（比如，系统属性）。
+
+```
+app.name=MyApp
+app.description=${app.name}isaSpringBootapplication
+
+```
+
+> **注：你也能使用相应的技巧为存在的SpringBoot属性创建'短'变量，具体参考Section63.3,“Use‘short’commandlinearguments”。**
+
+####13.6 使用YAML代替Properties
+
+YAML是JSON的一个超集，也是一种方便的定义层次配置数据的格式。无论你何时将SnakeYAML库放到classpath下，SpringApplication类都会自动支持YAML作为properties的替换。
+
+>**注：如果你使用'starterPOMs'，spring-boot-starter会自动提供SnakeYAML。**
+
+#####13.6.1 加载YAML
+
+Spring框架提供两个便利的类用于加载YAML文档，YamlPropertiesFactoryBean会将YAML作为Properties来加载，YamlMapFactoryBean会将YAML作为Map来加载。
+
+示例：
+
+```
+environments:
+  dev:
+    url:http://dev.bar.comname:DeveloperSetup
+  prod:
+    url:http://foo.bar.comname:MyCoolApp
+
+//上面的YAML文档会被转化到下面的属性中：
+
+environments.dev.url=http://dev.bar.com
+environments.dev.name=DeveloperSetup
+environments.prod.url=http://foo.bar.comenvironments.prod.name=MyCoolApp
+```
+
+YAML列表被表示成使用[index]间接引用作为属性keys的形式，例如下面的YAML：
+
+```
+my:
+  servers:
+    -dev.bar.com
+    -foo.bar.com
+
+将会转化到下面的属性中:
+my.servers[0]=dev.bar.com
+my.servers[1]=foo.bar.com
+
+```
+
+使用SpringDataBinder工具绑定那样的属性（这是@ConfigurationProperties做的事），你需要确定目标bean中有个java.util.List或Set类型的属性，并且需要提供一个setter或使用可变的值初始化它，比如，下面的代码将绑定上面的属性：
+
+```Java
+@ConfigurationProperties(prefix="my")
+public class Config{
+  private List<String> servers = new ArrayList<String>();
+  public List<String> getServers(){
+    returnthis.servers;
+    }
+}
+```
+
+#####13.6.2 在Spring环境中使用YAML暴露属性:
+
+YamlPropertySourceLoader类能够用于将YAML作为一个PropertySource导出到SprigEnvironment。这允许你使用熟悉的@Value注解和占位符语法访问YAML属性。
+
+#####13.6.3 Multi-profileYAML文档
+
+你可以在单个文件中定义多个特定配置（profile-specific）的YAML文档，并通过一个spring.profileskey标示应用的文档。例如：
+
+```
+server:
+  address:192.168.1.100
+---
+spring:
+  profiles:development
+server:
+  address:127.0.0.1
+---
+spring:
+  profiles:production
+  server:address:192.168.1.120
+
+```
+在上面的例子中，如果development配置被激活，那server.address属性将是127.0.0.1。如果development和production配置（profiles）没有启用，则该属性的值将是192.168.1.100。
+
+**YAML缺点：**
+
+YAML文件不能通过@PropertySource注解加载。所以，在这种情况下，如果需要使用@PropertySource注解的方式加载值，那就要使用properties文件。
+
+####14. Spring Web MVC框架
+Spring Web MVC框架（通常简称为"SpringMVC"）是一个富"模型，视图，控制器"的web框架。SpringMVC允许你创建特定的@Controller或@RestControllerbeans来处理传入的HTTP请求。使用@RequestMapping注解可以将控制器中的方法映射到相应的HTTP请求。
+
+示例：
+
+```Java
+@RestController
+@RequestMapping(value = "/users")
+public class MyRestController{
+
+  @RequestMapping(value = "/{user}",method = RequestMethod.GET)
+  public User getUser(@PathVariable Long user){
+    //...
+  }
+
+  @RequestMapping(value = "/{user}/customers",method = RequestMethod.GET)
+  List<Customer>getUserCustomers(@PathVariable Long user){
+    //...
+  }
+
+  @RequestMapping(value = "/{user}",method = RequestMethod.DELETE)
+  public User deleteUser(@PathVariable Long user){
+    //...
+  }
+}
+```
+
+#####14.1 Spring MVC自动配置
+
+SpringBoot为SpringMVC提供适用于多数应用的自动配置功能。在Spring默认基础上，自动配置添加了以下特性：
+
+- 1.引入ContentNegotiatingViewResolver和BeanNameViewResolverbeans。
+- 2.对静态资源的支持，包括对WebJars的支持。
+- 3.自动注册Converter，GenericConverter，Formatterbeans。
+- 4.对HttpMessageConverters的支持。
+- 5.自动注册MessageCodeResolver。
+- 6.对静态index.html的支持。
+- 7.对自定义Favicon的支持。如果想全面控制SpringMVC，你可以添加自己的@Configuration，并使用@EnableWebMvc对其注解。
+
+如果想保留SpringBootMVC的特性，并只是添加其他的MVC配置(拦截器，formatters，视图控制器等)，你可以添加自己的WebMvcConfigurerAdapter类型的@Bean（不使用@EnableWebMvc注解）。
+
+#####14.2 HttpMessageConverters
+
+Spring MVC使用HttpMessageConverter接口转换HTTP请求和响应。合理的缺省值被包含的恰到好处（out of the box），例如对象可以自动转换为JSON（使用Jackson库）或XML（如果JacksonXML扩展可用则使用它，否则使用JAXB）。字符串默认使用UTF-8编码。
+
+如果需要添加或自定义转换器，你可以使用SpringBoot的HttpMessageConverters类：
+
+```Java
+import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
+import org.springframework.context.annotation.*;
+import org.springframework.http.converter.*;
+@Configuration
+public class MyConfiguration{
+
+  @Bean
+  public HttpMessageConverters customConverters(){
+    HttpMessageConverter<?> additional = ...
+    HttpMessageConverter<?>another= ...
+    return new HttpMessageConverters(additional,another);
+  }
+}
+```
+
+任何在上下文中出现的HttpMessageConverterbean将会添加到converters列表，你可以通过这种方式覆盖默认的转换器（converters）。
+
+#####14.3 MessageCodesResolver
+
+Spring MVC有一个策略，用于从绑定的errors产生用来渲染错误信息的错误码：MessageCodesResolver。如果设置spring.mvc.message-codes-resolver.format属性为PREFIX_ERROR_CODE或POSTFIX_ERROR_CODE（具体查看DefaultMessageCodesResolver.Format枚举值），SpringBoot会为你创建一个MessageCodesResolver。
+
+#####14.4 静态内容
+
+默认情况下，SpringBoot从classpath下一个叫/static（/public，/resources或/META-INF/resources）的文件夹或从ServletContext根目录提供静态内容。这使用了SpringMVC的ResourceHttpRequestHandler，所以你可以通过添加自己的WebMvcConfigurerAdapter并覆写addResourceHandlers方法来改变这个行为（加载静态文件）。
+
+在一个单独的web应用中，容器默认的servlet是开启的，如果Spring决定不处理某些请求，默认的servlet作为一个回退（降级）将从ServletContext根目录加载内容。大多数时候，这不会发生（除非你修改默认的MVC配置），因为Spring总能够通过DispatcherServlet处理请求。
+
+此外，上述标准的静态资源位置有个例外情况是Webjars内容。任何在/webjars/** 路径下的资源都将从jar文件中提供，只要它们以Webjars的格式打包。
+
+> **注：如果你的应用将被打包成jar，那就不要使用src/main/webapp文件夹。尽管该文件夹是一个共同的标准，但它仅在打包成war的情况下起作用，并且如果产生一个jar，多数构建工具都会静悄悄的忽略它。**
+
+#####14.5 模板引擎
+
+正如REST web服务，你也可以使用Spring MVC提供动态HTML内容。SpringMVC支持各种各样的模板技术，包括Velocity,FreeMarker和JSPs。很多其他的模板引擎也提供它们自己的SpringMVC集成。
+
+SpringBoot为以下的模板引擎提供自动配置支持：
+- 1.FreeMarker
+- 2.Groovy
+- 3.Thymeleaf
+- 4.Velocity
+
+**注：如果可能的话，应该忽略JSPs，因为在内嵌的servlet容器使用它们时存在一些已知的限制。**
+
+当你使用这些引擎的任何一种，并采用默认的配置，你的模板将会从src/main/resources/templates目录下自动加载。
+
+>**注：IntelliJIDEA根据你运行应用的方式会对classpath进行不同的整理。在IDE里通过main方法运行你的应用跟从Maven或Gradle或打包好的jar中运行相比会导致不同的顺序。这可能导致SpringBoot不能从classpath下成功地找到模板。如果遇到这个问题，你可以在IDE里重新对classpath进行排序，将模块的类和资源放到第一位。或者，你可以配置模块的前缀为classpath*:/templates/，这样会查找classpath下的所有模板目录。**
+
+#####14.6 错误处理
+
+SpringBoot默认提供一个/error映射用来以合适的方式处理所有的错误，并且它在servlet容器中注册了一个全局的错误页面。对于机器客户端（相对于浏览器而言，浏览器偏重于人的行为），它会产生一个具有详细错误，HTTP状态，异常信息的JSON响应。对于浏览器客户端，它会产生一个白色标签样式（whitelabel）的错误视图，该视图将以HTML格式显示同样的数据（可以添加一个解析为erro的View来自定义它）。为了完全替换默认的行为，你可以实现ErrorController，并注册一个该类型的bean定义，或简单地添加一个ErrorAttributes类型的bean以使用现存的机制，只是替换显示的内容。
+
+如果在某些条件下需要比较多的错误页面，内嵌的servlet容器提供了一个统一的JavaDSL（领域特定语言）来自定义错误处理。
+
+示例：
+
+```java
+@Bean
+public EmbeddedServletContainerCustomizer containerCustomizer(){
+  return new MyCustomizer();
+}
+//...
+private static class MyCustomizer implements EmbeddedServletContainerCustomizer{
+
+  @Override
+  public void customize(ConfigurableEmbeddedServletContainercontainer){
+    container.addErrorPages(newErrorPage(HttpStatus.BAD_REQUEST,"/400"));
+  }
+}
+```
+
+你也可以使用常规的SpringMVC特性来处理错误，比如@ExceptionHandler方法和@ControllerAdvice。ErrorController将会捡起任何没有处理的异常。
+
+N.B.如果你为一个路径注册一个ErrorPage，最终被一个过滤器（Filter）处理（对于一些非Springweb框架，像Jersey和Wicket这很常见），然后过滤器需要显式注册为一个ERROR分发器（dispatcher）。
+
+```Java
+@Bean
+public FilterRegistrationBean myFilter(){
+  FilterRegistrationBean registration = new FilterRegistrationBean();
+  registration.setFilter(newMyFilter());
+  ...
+  registration.setDispatcherTypes(EnumSet.allOf(DispatcherType.class));
+  returnregistration;
+}
+```
+
+注：默认的FilterRegistrationBean没有包含ERROR分发器类型。
